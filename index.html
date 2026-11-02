@@ -23,7 +23,7 @@
   --line: #E4E4DE; --line2: #D6D6CF; --on-ink: #F7F7F4;
   --amber: #B07A1E; --amber-text: #8A5A0E; --link: #3D5A80; --star: #C9962E; --star-line: #8A6418;
   --mon: #6E9274; --tue: #5B7BA6; --wed: #B08A4F; --fri: #9A6F84;
-  --hero: #7E5469; --on-hero: #FFFFFF;
+  --hero: #000000; --on-hero: #FFFFFF; --hero-line: #000000;
   --tint-mon: #B9D1BC; --tint-tue: #B7C9E2; --tint-wed: #E6CC9E; --tint-fri: #E3C5D3;
   --scrim: rgba(28, 28, 26, 0.38); --shadow: 0 10px 30px rgba(28, 28, 26, 0.16);
   --serif: "Libre Baskerville", Baskerville, "Baskerville Old Face", Georgia, serif;
@@ -36,7 +36,7 @@
     --ink: #EDEDE6; --ink2: #DADAD2; --text2: #BDBDB4; --muted: #A5A59B; --faint: #7D7D75;
     --line: #33332F; --line2: #46463F; --on-ink: #191917;
     --amber: #D4A04A; --amber-text: #E0B263; --link: #A3BCDD; --star: #D9A740; --star-line: #E8C374;
-    --hero: #6A4558; --scrim: rgba(0, 0, 0, 0.55); --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --hero: #000000; --hero-line: #3A3A35; --scrim: rgba(0, 0, 0, 0.55); --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
   }
 }
@@ -45,7 +45,7 @@
   --ink: #EDEDE6; --ink2: #DADAD2; --text2: #BDBDB4; --muted: #A5A59B; --faint: #7D7D75;
   --line: #33332F; --line2: #46463F; --on-ink: #191917;
   --amber: #D4A04A; --amber-text: #E0B263; --link: #A3BCDD; --star: #D9A740; --star-line: #E8C374;
-  --hero: #6A4558; --scrim: rgba(0, 0, 0, 0.55); --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --hero: #000000; --hero-line: #3A3A35; --scrim: rgba(0, 0, 0, 0.55); --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   color-scheme: dark;
 }
 
@@ -97,14 +97,15 @@ h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
   display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;
   padding: 16px 18px; border: 0; border-radius: 14px; background: var(--ink); color: var(--on-ink); text-align: left;
 }
-.plan-btn strong { display: block; font-size: 16px; font-weight: 600; }
-.plan-btn span span { display: block; margin-top: 4px; font-size: 13px; opacity: 0.75; }
+.plan-btn strong { display: block; font-size: 16px; font-weight: 500; }
+h1.today-title { font-size: 32px; font-weight: 500; line-height: 1.22; max-width: 11em; }
+#app.is-wrap { gap: 64px; }
 
 .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
 .chips::-webkit-scrollbar { display: none; }
 .chip {
   flex-shrink: 0; min-height: 36px; padding: 0 14px; border-radius: 18px;
-  border: 1px solid var(--line2); background: var(--card); font-size: 14px; color: var(--ink);
+  border: 1px solid transparent; background: var(--card); font-size: 14px; color: var(--ink);
 }
 .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
 
@@ -247,24 +248,27 @@ h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
   position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 18px;
   padding: 22px 20px 20px; border-radius: 20px; background: var(--hero); color: var(--on-hero);
 }
-.hero-mark { position: absolute; top: -10px; right: -12px; opacity: 0.22; pointer-events: none; }
-.hero-big { display: flex; align-items: baseline; gap: 14px; }
+.hero { gap: 28px; padding: 24px 20px; border: 1px solid var(--hero-line); }
+.hero-big { display: flex; align-items: center; gap: 18px; }
 .hero-big strong { font-size: 64px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
-.hero-big span { font-size: 18px; font-weight: 600; line-height: 1.25; }
-.bar { display: flex; gap: 4px; height: 10px; }
-.bar span { border-radius: 5px; }
-.bar-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; }
-.hero-foot { margin: 0; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.28); font-size: 14px; line-height: 1.5; }
+.hero-big span { font-family: var(--mono); font-size: 17px; font-weight: 500; line-height: 1.3; letter-spacing: 0.06em; text-transform: uppercase; }
+.breakdown { display: flex; gap: 4px; }
+.breakdown > div { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.breakdown b { font-size: 14px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.breakdown small { font-family: var(--mono); font-size: 10px; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.breakdown i { display: block; height: 4px; margin-top: 7px; border-radius: 2px; }
+.hero-foot { margin: 0; font-size: 14px; line-height: 1.5; }
 
 .wins { display: flex; flex-direction: column; gap: 6px; }
 .wins-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 2px 4px; flex-wrap: wrap; }
 .wins-head span { font-size: 13px; color: var(--muted); }
 .win {
-  display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 4px 0 14px;
-  border-radius: 14px; background: var(--surface); border: 1px solid transparent;
+  display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 14px; width: 100%;
+  border-radius: 14px; background: var(--surface); border: 1px solid transparent; text-align: left;
 }
-.win.is-star { background: var(--card); border-color: var(--line); }
-.win > span:nth-child(2) { flex: 1; min-width: 0; font-size: 15.5px; line-height: 1.35; }
+.win[aria-pressed="true"] { background: var(--card); border-color: var(--line); }
+.win > span:nth-child(2) { flex: 1; min-width: 0; font-size: 16px; font-weight: 500; line-height: 1.35; }
+.win em { flex-shrink: 0; font-style: normal; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .star-btn { flex-shrink: 0; width: 44px; height: 44px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center; }
 .star-btn svg { fill: none; stroke: var(--faint); }
 .star-btn[aria-pressed="true"] svg { fill: var(--star); stroke: var(--star-line); }
@@ -454,11 +458,11 @@ h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
   const ALLDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const FULL = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
   const THEMES = {
-    Mon: { name: 'Set Up + Writing', color: 'var(--mon)', blurb: 'Easy start. Workout, groceries, cleaning, reading, writing.' },
-    Tue: { name: 'Plan + Business', color: 'var(--tue)', blurb: 'Morning: plan the week. Afternoon: find work, website, correspondence.' },
-    Wed: { name: 'Client Work', color: 'var(--wed)', blurb: 'Heads-down project delivery.' },
-    Thu: { name: 'Client Work', color: 'var(--wed)', blurb: 'Heads-down project delivery. Optional writing slot.' },
-    Fri: { name: 'Wrap + Free', color: 'var(--fri)', blurb: 'Client updates first, then a workout, reflect and plan. Then you’re free.' }
+    Mon: { name: 'Set Up + Writing', phrase: 'getting set up', color: 'var(--mon)', blurb: 'Easy start. Workout, groceries, cleaning, reading, writing.' },
+    Tue: { name: 'Plan + Business', phrase: 'planning and business', color: 'var(--tue)', blurb: 'Morning: plan the week. Afternoon: find work, website, correspondence.' },
+    Wed: { name: 'Client Work', phrase: 'client work', color: 'var(--wed)', blurb: 'Heads-down project delivery.' },
+    Thu: { name: 'Client Work', phrase: 'client work', color: 'var(--wed)', blurb: 'Heads-down project delivery. Optional writing slot.' },
+    Fri: { name: 'Wrap + Free', phrase: 'wrapping up', color: 'var(--fri)', blurb: 'Client updates first, then a workout, reflect and plan. Then you’re free.' }
   };
   const GROUPS = [
     { name: 'Set Up', days: ['Mon'], tint: 'var(--tint-mon)', color: 'var(--mon)' },
@@ -626,8 +630,8 @@ h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
     const date = FULL[d] + ' · ' + fmt(dateOf(d));
     if (!THEMES[d]) {
       const monCount = S.tasks.filter((t) => t.day === 'Mon' && t.status !== 'done').length;
-      return `<header class="head"><p class="eyebrow">${esc(date)}</p><h1>Weekend</h1>
-        <p class="lede">Blank on purpose. Nothing to tackle until Monday.</p></header>
+      return `<header class="head"><p class="eyebrow">${esc(date)}</p><h1 class="today-title">Today is for resting</h1>
+        <p class="lede">Weekends are blank on purpose.</p></header>
         <section class="next-card"><p class="eyebrow">Up next</p>
         <div class="title-row"><span class="dot sm" style="background:var(--mon)"></span><strong>Monday · Set Up + Writing</strong></div>
         <p>${monCount} ${monCount === 1 ? 'task' : 'tasks'} waiting for Monday.</p></section>`;
@@ -635,10 +639,9 @@ h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
     const th = THEMES[d];
     const L = todayLists(d, S.filters.today);
     let h = `<header class="head"><p class="eyebrow">${esc(date)}</p>
-      <div class="title-row"><span class="dot" style="background:${th.color}"></span><h1>${esc(th.name)}</h1></div>
-      <p class="lede">${esc(th.blurb)}</p></header>`;
+      <h1 class="today-title">Today is for ${esc(th.phrase)}</h1></header>`;
     if (d === 'Tue') {
-      h += `<button type="button" class="plan-btn" data-act="plan"><span><strong>Plan this week</strong><span>Due, done, steps, blockers, days</span></span>${ICON.arrow}</button>`;
+      h += `<button type="button" class="plan-btn" data-act="plan"><strong>Make a plan for the week</strong>${ICON.arrow}</button>`;
     }
     h += chips('today');
     h += '<section class="section" aria-labelledby="ready-h"><h2 class="eyebrow" id="ready-h">Ready</h2>';
@@ -707,21 +710,21 @@ h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
       <p class="lede">${done.length ? 'Look at what you moved forward.' : 'Wins land here as you finish things.'}</p></header>`;
 
     const counts = GROUPS.map((g) => ({ g, n: done.filter((t) => g.days.includes(t.day)).length }));
-    h += `<section class="hero" aria-labelledby="hero-h">${ICON.mark}
-      <div class="hero-big"><strong>${done.length}</strong><span id="hero-h">${done.length === 1 ? 'thing' : 'things'} done<br>this week</span></div>`;
+    const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+    h += `<section class="hero" aria-labelledby="hero-h">
+      <div class="hero-big"><strong>${done.length}</strong><span id="hero-h">${done.length === 1 ? 'Task' : 'Tasks'} completed<br>this week</span></div>`;
     if (done.length) {
-      h += '<div class="bar" aria-hidden="true">' + counts.filter((c) => c.n).map((c) => `<span style="flex:${c.n} 1 0;background:${c.g.tint}"></span>`).join('') + '</div>';
-      h += '<div class="bar-legend">' + counts.filter((c) => c.n).map((c) => `<span>${c.n} ${c.g.name}</span>`).join('') + '</div>';
+      h += '<div class="breakdown">' + counts.filter((c) => c.n).map((c) =>
+        `<div style="flex:${c.n} 1 0"><b>${c.n}</b><small>${c.g.name}</small><i style="background:${c.g.tint}" aria-hidden="true"></i></div>`).join('') + '</div>';
     }
-    h += `<p class="hero-foot">${S.streak} ${S.streak === 1 ? 'week' : 'weeks'} in a row closed out. Close this one to make it ${S.streak + 1}.</p></section>`;
+    h += `<p class="hero-foot">${S.closed ? '' : 'Close this out for your '}${ord(S.closed ? S.streak : S.streak + 1)} week in a row${S.closed ? ' closed out.' : '.'}</p></section>`;
 
     if (done.length) {
-      h += '<section class="wins" aria-labelledby="wins-h"><div class="wins-head"><h2 id="wins-h">Wins</h2><span>Star the one you’re proudest of</span></div>';
+      h += '<section class="wins" aria-labelledby="wins-h"><div class="wins-head"><h2 id="wins-h">Wins</h2><span>Tap the one you’re proudest of</span></div>';
       h += done.map((t) => {
         const on = S.starred === t.id;
         const g = GROUPS.find((x) => x.days.includes(t.day));
-        return `<div class="win ${on ? 'is-star' : ''}"><span class="dot sm" style="background:${g.color}"></span><span>${esc(t.label)}</span>
-          <button type="button" class="star-btn" data-act="star" data-id="${t.id}" aria-pressed="${on}" aria-label="Proudest win: ${esc(t.label)}">${ICON.star}</button></div>`;
+        return `<button type="button" class="win" data-act="star" data-id="${t.id}" aria-pressed="${on}"><span class="dot sm" style="background:${g.color}"></span><span>${esc(t.label)}</span>${on ? '<em>Proudest</em>' : ''}</button>`;
       }).join('');
       h += '</section>';
     }
@@ -1036,6 +1039,7 @@ h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
     const keepScroll = v === 'week' && lastView === 'week' && lastSimDay === S.simDay && oldDays ? oldDays.scrollLeft : null;
     $('#proto').innerHTML = renderProto();
     $('#app').innerHTML = v === 'today' ? renderToday() : v === 'week' ? renderWeek() : renderWrap();
+    $('#app').classList.toggle('is-wrap', v === 'wrap');
     if (v === 'week') {
       const days = $('#days');
       if (keepScroll !== null) days.scrollLeft = keepScroll;
