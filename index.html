@@ -23,6 +23,7 @@
   --line: #E4E4DE; --line2: #D6D6CF; --on-ink: #F7F7F4;
   --amber: #B07A1E; --amber-text: #8A5A0E; --link: #3D5A80; --star: #C9962E; --star-line: #8A6418;
   --mon: #6E9274; --tue: #5B7BA6; --wed: #B08A4F; --fri: #9A6F84;
+  --c-plan: #5B7BA6; --c-client: #B08A4F; --c-wrap: #9A6F84; --c-own: #6E9274;
   --hero: #000000; --on-hero: #FFFFFF; --hero-line: #000000;
   --tint-mon: #B9D1BC; --tint-tue: #B7C9E2; --tint-wed: #E6CC9E; --tint-fri: #E3C5D3;
   --scrim: rgba(28, 28, 26, 0.38); --shadow: 0 10px 30px rgba(28, 28, 26, 0.16);
@@ -252,11 +253,14 @@ h1.today-title { font-size: 32px; font-weight: 500; line-height: 1.22; max-width
 .hero-big { display: flex; align-items: center; gap: 18px; }
 .hero-big strong { font-size: 64px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
 .hero-big span { font-family: var(--mono); font-size: 17px; font-weight: 500; line-height: 1.3; letter-spacing: 0.06em; text-transform: uppercase; }
-.breakdown { display: flex; gap: 4px; }
-.breakdown > div { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.breakdown b { font-size: 14px; font-weight: 400; font-variant-numeric: tabular-nums; }
-.breakdown small { font-family: var(--mono); font-size: 10px; font-weight: 400; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.breakdown i { display: block; height: 4px; margin-top: 7px; border-radius: 2px; }
+.tally { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 10px 18px; }
+.tally li { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tally-ico {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 9px; border: 1px solid rgba(255, 255, 255, 0.28);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.tally b { font-size: 16px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.tally small { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8; }
 .hero-foot { margin: 0; font-size: 14px; line-height: 1.5; }
 
 .wins { display: flex; flex-direction: column; gap: 6px; }
@@ -453,23 +457,18 @@ h1.today-title { font-size: 32px; font-weight: 500; line-height: 1.22; max-width
 
 <script>
 (function () {
-  const KEY = 'tackle-prototype-v2';
+  const KEY = 'tackle-prototype-v3';
   const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
   const ALLDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const FULL = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
   const THEMES = {
-    Mon: { name: 'Set Up + Writing', phrase: 'getting set up', color: 'var(--mon)', blurb: 'Easy start. Workout, groceries, cleaning, reading, writing.' },
-    Tue: { name: 'Plan + Business', phrase: 'planning and business', color: 'var(--tue)', blurb: 'Morning: plan the week. Afternoon: find work, website, correspondence.' },
-    Wed: { name: 'Client Work', phrase: 'client work', color: 'var(--wed)', blurb: 'Heads-down project delivery.' },
-    Thu: { name: 'Client Work', phrase: 'client work', color: 'var(--wed)', blurb: 'Heads-down project delivery. Optional writing slot.' },
-    Fri: { name: 'Wrap + Free', phrase: 'wrapping up', color: 'var(--fri)', blurb: 'Client updates first, then a workout, reflect and plan. Then you’re free.' }
+    Mon: { name: 'Plan + Set Up', phrase: 'planning the week', color: 'var(--c-plan)' },
+    Tue: { name: 'Client Work', phrase: 'client work', color: 'var(--c-client)' },
+    Wed: { name: 'Client Work', phrase: 'client work', color: 'var(--c-client)' },
+    Thu: { name: 'Wrap Up', phrase: 'wrapping up', color: 'var(--c-wrap)' },
+    Fri: { name: 'Website + Personal', phrase: 'website and personal projects', color: 'var(--c-own)' }
   };
-  const GROUPS = [
-    { name: 'Set Up', days: ['Mon'], tint: 'var(--tint-mon)', color: 'var(--mon)' },
-    { name: 'Business', days: ['Tue'], tint: 'var(--tint-tue)', color: 'var(--tue)' },
-    { name: 'Client', days: ['Wed', 'Thu'], tint: 'var(--tint-wed)', color: 'var(--wed)' },
-    { name: 'Wrap', days: ['Fri'], tint: 'var(--tint-fri)', color: 'var(--fri)' }
-  ];
+  const WRAP_DAY = 'Thu';
   const PICON = {
     briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/>',
     compass: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
@@ -526,25 +525,24 @@ h1.today-title { font-size: 32px; font-weight: 500; line-height: 1.22; max-width
     const t = (label, day, tag, o) => Object.assign({ id: nid(), label, day, tag, status: 'todo', dep: '', repeat: false, home: null }, o || {});
     return {
       tasks: [
+        t('Weekly work plan', 'Mon', 'Business', { repeat: true, status: 'done' }),
         t('Workout', 'Mon', 'Personal', { repeat: true, status: 'done' }),
         t('Groceries', 'Mon', 'Personal', { repeat: true, status: 'done' }),
-        t('Writing session', 'Mon', 'Writing', { repeat: true, status: 'doing' }),
+        t('Reply to new client inquiries', 'Mon', 'Business', { status: 'doing' }),
+        t('Send Client A next-phase quote', 'Mon', 'Client A', { dep: 'Their budget number' }),
         t('Clean the apartment', 'Mon', 'Personal', { repeat: true }),
-        t('Read · 30 min', 'Mon', 'Personal', { repeat: true }),
-        t('Weekly work plan', 'Tue', 'Business', { repeat: true }),
-        t('Reply to new client inquiries', 'Tue', 'Business'),
+        t('Client A wireframes', 'Tue', 'Client A'),
         t('Client B kickoff notes', 'Tue', 'Client B'),
-        t('Refresh case study page', 'Tue', 'Website', { dep: 'New screenshots' }),
-        t('Site maintenance check', 'Tue', 'Website', { repeat: true }),
-        t('Send Client A next-phase quote', 'Tue', 'Client A', { dep: 'Their budget number' }),
-        t('Client A wireframes', 'Wed', 'Client A'),
-        t('Client B research synthesis', 'Wed', 'Client B'),
-        t('Client A revisions', 'Thu', 'Client A'),
-        t('Client B interview guide', 'Thu', 'Client B'),
-        t('Writing · 30 min', 'Thu', 'Writing', { repeat: true }),
-        t('Send client updates', 'Fri', 'Business', { repeat: true }),
-        t('Workout', 'Fri', 'Personal', { repeat: true }),
-        t('Wrap + plan next week', 'Fri', 'Business', { repeat: true })
+        t('Client B research synthesis', 'Tue', 'Client B'),
+        t('Client A revisions', 'Wed', 'Client A'),
+        t('Client B interview guide', 'Wed', 'Client B'),
+        t('Send client updates', 'Thu', 'Business', { repeat: true }),
+        t('Workout', 'Thu', 'Personal', { repeat: true }),
+        t('Wrap up the week', 'Thu', 'Business', { repeat: true }),
+        t('Refresh case study page', 'Fri', 'Website', { dep: 'New screenshots' }),
+        t('Site maintenance check', 'Fri', 'Website', { repeat: true }),
+        t('Writing session', 'Fri', 'Writing', { repeat: true }),
+        t('Read · 30 min', 'Fri', 'Personal', { repeat: true })
       ],
       projects: [
         { name: 'Client A', icon: 'briefcase' },
@@ -633,14 +631,14 @@ h1.today-title { font-size: 32px; font-weight: 500; line-height: 1.22; max-width
       return `<header class="head"><p class="eyebrow">${esc(date)}</p><h1 class="today-title">Today is for resting</h1>
         <p class="lede">Weekends are blank on purpose.</p></header>
         <section class="next-card"><p class="eyebrow">Up next</p>
-        <div class="title-row"><span class="dot sm" style="background:var(--mon)"></span><strong>Monday · Set Up + Writing</strong></div>
+        <div class="title-row"><span class="dot sm" style="background:${THEMES.Mon.color}"></span><strong>Monday · ${THEMES.Mon.name}</strong></div>
         <p>${monCount} ${monCount === 1 ? 'task' : 'tasks'} waiting for Monday.</p></section>`;
     }
     const th = THEMES[d];
     const L = todayLists(d, S.filters.today);
     let h = `<header class="head"><p class="eyebrow">${esc(date)}</p>
       <h1 class="today-title">Today is for ${esc(th.phrase)}</h1></header>`;
-    if (d === 'Tue') {
+    if (d === 'Mon') {
       h += `<button type="button" class="plan-btn" data-act="plan"><strong>Make a plan for the week</strong>${ICON.arrow}</button>`;
     }
     h += chips('today');
@@ -705,17 +703,17 @@ h1.today-title { font-size: 32px; font-weight: 500; line-height: 1.22; max-width
         <p>${c.wins} ${c.wins === 1 ? 'win' : 'wins'} banked · ${c.rolled} rolled forward · ${c.dropped} dropped</p>
         <button type="button" data-act="dismiss-closed">Start next week</button></section>`;
     }
-    h += `<header class="head"><p class="eyebrow">${d === 'Fri' ? 'Friday · ' + fmt(dateOf('Fri')) : 'Preview · Wrap is for Friday'}</p>
+    h += `<header class="head"><p class="eyebrow">${d === WRAP_DAY ? FULL[WRAP_DAY] + ' · ' + fmt(dateOf(WRAP_DAY)) : 'Preview · Wrap is for ' + FULL[WRAP_DAY]}</p>
       <h1>${done.length ? 'Good week, Trev.' : 'The week so far'}</h1>
       <p class="lede">${done.length ? 'Look at what you moved forward.' : 'Wins land here as you finish things.'}</p></header>`;
 
-    const counts = GROUPS.map((g) => ({ g, n: done.filter((t) => g.days.includes(t.day)).length }));
+    const byProject = S.projects.map((p) => ({ p, n: done.filter((t) => t.tag === p.name).length })).filter((c) => c.n).sort((a, b) => b.n - a.n);
     const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
     h += `<section class="hero" aria-labelledby="hero-h">
       <div class="hero-big"><strong>${done.length}</strong><span id="hero-h">${done.length === 1 ? 'Task' : 'Tasks'} completed<br>this week</span></div>`;
     if (done.length) {
-      h += '<div class="breakdown">' + counts.filter((c) => c.n).map((c) =>
-        `<div style="flex:${c.n} 1 0"><b>${c.n}</b><small>${c.g.name}</small><i style="background:${c.g.tint}" aria-hidden="true"></i></div>`).join('') + '</div>';
+      h += '<ul class="tally" aria-label="By project">' + byProject.map((c) =>
+        `<li><span class="tally-ico">${picon(c.p.icon, 16)}</span><b>${c.n}</b><small>${esc(c.p.name)}</small></li>`).join('') + '</ul>';
     }
     h += `<p class="hero-foot">${S.closed ? '' : 'Close this out for your '}${ord(S.closed ? S.streak : S.streak + 1)} week in a row${S.closed ? ' closed out.' : '.'}</p></section>`;
 
@@ -723,8 +721,7 @@ h1.today-title { font-size: 32px; font-weight: 500; line-height: 1.22; max-width
       h += '<section class="wins" aria-labelledby="wins-h"><div class="wins-head"><h2 id="wins-h">Wins</h2><span>Tap the one you’re proudest of</span></div>';
       h += done.map((t) => {
         const on = S.starred === t.id;
-        const g = GROUPS.find((x) => x.days.includes(t.day));
-        return `<button type="button" class="win" data-act="star" data-id="${t.id}" aria-pressed="${on}"><span class="dot sm" style="background:${g.color}"></span><span>${esc(t.label)}</span>${on ? '<em>Proudest</em>' : ''}</button>`;
+        return `<button type="button" class="win" data-act="star" data-id="${t.id}" aria-pressed="${on}"><span class="dot sm" style="background:${THEMES[t.day].color}"></span><span>${esc(t.label)}</span>${on ? '<em>Proudest</em>' : ''}</button>`;
       }).join('');
       h += '</section>';
     }
