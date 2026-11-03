@@ -342,7 +342,13 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 
 
 /* Wrap flow */
-.stepper { display: flex; flex-direction: column; gap: 10px; margin-bottom: -8px; }
+.stepper { position: relative; display: flex; flex-direction: column; gap: 10px; margin-bottom: -8px; }
+.wrap-back {
+  position: absolute; left: -6px; bottom: calc(100% + 2px); display: inline-flex; align-items: center; gap: 2px;
+  min-height: 26px; padding: 0 8px 0 2px; border: 0; background: transparent; color: var(--muted);
+  font: inherit; font-size: 13px; font-weight: 500; text-decoration: none; cursor: pointer;
+}
+.wrap-back svg { width: 16px; height: 16px; }
 .step-bars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
 .step-bars span { height: 3px; border-radius: 2px; background: var(--line); }
 .step-bars span.on { background: var(--ink); }
@@ -924,7 +930,10 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 
   function wrapStepper(n) {
     const names = ['This week', 'Reflect', 'Next week', 'Confirm'];
-    return `<div class="stepper" aria-label="Step ${n} of 4: ${names[n - 1]}">
+    const back = n > 1
+      ? `<button type="button" class="wrap-back" data-act="wrap-step" data-val="${n - 1}">${ICON.back}Back</button>`
+      : `<a class="wrap-back" href="#today">${ICON.back}Back</a>`;
+    return `<div class="stepper" aria-label="Step ${n} of 4: ${names[n - 1]}">${back}
       <div class="step-bars" aria-hidden="true">${names.map((_, i) => `<span class="${i < n ? 'on' : ''}"></span>`).join('')}</div>
       <p class="eyebrow">Step ${n} of 4 · ${names[n - 1]}</p></div>`;
   }
