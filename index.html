@@ -526,9 +526,14 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 .tag-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .targets { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .targets button {
-  min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  border-radius: 12px; border: 1px solid var(--line); background: var(--card); font-size: 14px; font-weight: 600;
+  min-height: 92px; padding: 0 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+  border-radius: 14px; border: 1px solid var(--line); background: var(--card); color: var(--ink);
 }
+.targets .t-day { font-size: 17px; font-weight: 500; }
+.targets .t-theme { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.targets button[aria-pressed="true"] .t-theme { color: var(--on-ink); opacity: 0.85; }
+.move-title { color: var(--ink); font-family: var(--display) !important; font-size: 20px !important; font-weight: 400 !important; text-transform: uppercase !important; line-height: 1.05 !important; letter-spacing: 0 !important; }
+.primary[disabled] { background: var(--line); color: var(--muted); cursor: default; }
 .targets button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
 .options { display: flex; flex-direction: column; gap: 8px; }
 .option {
@@ -629,11 +634,11 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
   const ALLDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const FULL = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
   const THEMES = {
-    Mon: { name: 'Plan + Set Up', phrase: 'planning the week', color: 'var(--c-plan)' },
-    Tue: { name: 'Client Work', phrase: 'client work', color: 'var(--c-client)' },
-    Wed: { name: 'Client Work', phrase: 'client work', color: 'var(--c-client)' },
-    Thu: { name: 'Wrap Up', phrase: 'wrapping up', color: 'var(--c-wrap)' },
-    Fri: { name: 'Website + Personal', phrase: 'website and personal projects', color: 'var(--c-own)' }
+    Mon: { short: 'Planning', name: 'Plan + Set Up', phrase: 'planning the week', color: 'var(--c-plan)' },
+    Tue: { short: 'Client', name: 'Client Work', phrase: 'client work', color: 'var(--c-client)' },
+    Wed: { short: 'Client', name: 'Client Work', phrase: 'client work', color: 'var(--c-client)' },
+    Thu: { short: 'Wrap up', name: 'Wrap Up', phrase: 'wrapping up', color: 'var(--c-wrap)' },
+    Fri: { short: 'Personal', name: 'Website + Personal', phrase: 'website and personal projects', color: 'var(--c-own)' }
   };
   const WRAP_DAY = 'Fri';
   const PICON = {
@@ -1105,22 +1110,20 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
         <button type="button" data-act="menu-done">${ICON.check}${doneLabel}</button>
         <button type="button" class="danger" data-act="menu-delete">${ICON.trash}Delete task</button></div>`;
     }
-    let h = `<div class="sheet-head"><div class="preview-chip"><button type="button" class="back-btn" data-act="menu-back" aria-label="Back">${ICON.back}</button><h2 id="sheet-h">Move “${esc(t.label)}”</h2></div>${closeBtn}</div>`;
+    let h = `<div class="sheet-head"><div class="preview-chip"><button type="button" class="back-btn" data-act="menu-back" aria-label="Back">${ICON.back}</button><h2 id="sheet-h" class="move-title">Move “${esc(t.label)}”</h2></div>${closeBtn}</div>`;
     h += '<div class="field-group"><p class="eyebrow">Move to</p><div class="targets" role="group" aria-label="Move to day">' + WEEKDAYS.map((d) => {
       const cur = d === t.day;
-      return `<button type="button" class="${cur ? 'is-current' : ''}" data-act="m-day" data-val="${d}" aria-pressed="${sheet.to === d}"${cur ? ' aria-label="' + FULL[d] + ', current day"' : ''}><span class="dot sm" style="background:${THEMES[d].color}"></span>${d}</button>`;
+      return `<button type="button" class="${cur ? 'is-current' : ''}" data-act="m-day" data-val="${d}" aria-pressed="${sheet.to === d}"${cur ? ' aria-label="' + FULL[d] + ', current day"' : ''}><span class="dot sm" style="background:${THEMES[d].color}"></span><span class="t-day">${d}</span><span class="t-theme">${THEMES[d].short}</span></button>`;
     }).join('') + '</div></div>';
-    if (sheet.to && sheet.to !== t.day) {
-      if (t.repeat) {
-        const wk = sheet.scope === 'week';
-        h += `<div class="options" role="group" aria-label="How long">
-          <button type="button" class="option" data-act="m-scope" data-val="week" aria-pressed="${wk}"><span class="radio"></span><span><strong>Just this week</strong><span>Back on ${t.home || t.day} next week.</span></span></button>
-          <button type="button" class="option" data-act="m-scope" data-val="every" aria-pressed="${!wk}"><span class="radio"></span><span><strong>Every week</strong><span>Updates your weekly plan.</span></span></button></div>`;
-      }
-      const label = t.repeat && sheet.scope === 'every' ? 'Move to ' + FULL[sheet.to] + 's' : 'Move to ' + FULL[sheet.to];
-      h += `<button type="button" class="primary" data-act="do-move">${label}</button>`;
+    const ready = sheet.to && sheet.to !== t.day;
+    if (ready && t.repeat) {
+      const wk = sheet.scope === 'week';
+      h += `<div class="options" role="group" aria-label="How long">
+        <button type="button" class="option" data-act="m-scope" data-val="week" aria-pressed="${wk}"><span class="radio"></span><span><strong>Just this week</strong><span>Back on ${t.home || t.day} next week.</span></span></button>
+        <button type="button" class="option" data-act="m-scope" data-val="every" aria-pressed="${!wk}"><span class="radio"></span><span><strong>Every week</strong><span>Updates your weekly plan.</span></span></button></div>`;
     }
-    if (!sheet.to || sheet.to === t.day) h += `<p class="hint">Pick a day. It’s on ${FULL[t.day]} now.</p>`;
+    const label = !ready ? 'Pick a day' : t.repeat && sheet.scope === 'every' ? 'Move to ' + FULL[sheet.to] + 's' : 'Move to ' + FULL[sheet.to];
+    h += `<button type="button" class="primary" data-act="do-move"${ready ? '' : ' disabled'}>${label}</button>`;
     return h;
   }
 
