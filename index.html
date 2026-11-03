@@ -227,6 +227,14 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
   background: var(--card); border: 1px solid var(--line);
 }
 .wcard.moved { border-style: dashed; border-color: var(--faint); }
+.wcard[data-drag] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; transition: transform .15s, box-shadow .15s; }
+.wcard.is-pressing { transform: scale(.98); }
+.wcard.is-dragging { opacity: .3; }
+.wcard.is-ghost { position: fixed; z-index: 60; pointer-events: none; margin: 0; transform: scale(1.02) rotate(-1deg); box-shadow: 0 12px 30px rgba(0,0,0,.2); border: 1px solid var(--ink); }
+.wcard.drop-before { box-shadow: 0 -3px 0 -1px var(--ink); }
+.wcard.drop-after { box-shadow: 0 3px 0 -1px var(--ink); }
+[data-zone].is-over { box-shadow: 0 0 0 2px var(--ink); }
+body.is-dragging-task { overflow: hidden; touch-action: none; }
 .wcard-main {
   flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 6px 0;
   border: 0; background: transparent; text-align: left;
@@ -887,7 +895,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       }
       const projs = [...new Set(openT.map((t) => t.tag))];
       const icons = projs.slice(0, 5).map((g) => tile(g, true)).join('') + (projs.length > 5 ? `<span class="more-n">+${projs.length - 5}</span>` : '');
-      h += `<section class="day ${S.simDay === d ? 'is-today' : ''} ${isOpen ? 'is-open' : 'is-closed'}" data-day="${d}" aria-label="${FULL[d]}, ${esc(th.name)}">
+      h += `<section class="day ${S.simDay === d ? 'is-today' : ''} ${isOpen ? 'is-open' : 'is-closed'}" data-day="${d}" data-zone="${d}" aria-label="${FULL[d]}, ${esc(th.name)}">
         <button type="button" class="day-toggle" data-act="toggle-day" data-val="${d}" aria-expanded="${isOpen}" aria-controls="day-${d}">
           <span class="day-head">
             <span class="day-name"><span>${themeIcon(d)}<strong>${FULL[d]}</strong></span><small>${esc(th.name)}</small></span>
@@ -901,7 +909,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
           h += '<div class="wcards">' + tasks.map((t) => {
             const cls = (t.home ? ' moved' : '') + (t.status === 'done' ? ' is-done' : '') + (t.status === 'doing' ? ' is-doing' : '');
             const sub = t.status === 'doing' ? 'In progress' : t.home ? 'usually ' + t.home : t.repeat ? 'Every week' : '';
-            return `<div class="wcard${cls}">
+            return `<div class="wcard${cls}" data-drag="${t.id}" data-ctx="week">
               <button type="button" class="wcard-main" data-act="edit" data-id="${t.id}">${tile(t.tag, true)}
                 <span class="wcard-text"><span>${esc(t.label)}</span>${sub ? `<small>${t.repeat && !t.home && t.status !== 'doing' ? ICON.repeat : ''}${sub}</small>` : ''}</span></button>
               <button type="button" class="more" data-act="menu" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button></div>`;
@@ -1011,13 +1019,13 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       for (const w of WEEKDAYS) {
         const rec = S.tasks.filter((t) => t.repeat && (t.home || t.day) === w);
         const car = loose.filter((t) => carryDay(t) === w);
-        h += `<div class="plan-day"><div class="plan-day-head">${themeIcon(w)}<strong>${FULL[w]}</strong><small>${esc(THEMES[w].name)}</small></div>`;
+        h += `<div class="plan-day" data-zone="${w}"><div class="plan-day-head">${themeIcon(w)}<strong>${FULL[w]}</strong><small>${esc(THEMES[w].name)}</small></div>`;
         if (!rec.length && !car.length) h += '<p class="quiet-note">Nothing yet.</p>';
-        const card = (t, cls, sub) => `<div class="wcard${cls}"><div class="wcard-main">${tile(t.tag, true)}
+        const card = (t, cls, sub) => `<div class="wcard${cls}" data-drag="${t.id}" data-ctx="plan"><div class="wcard-main">${tile(t.tag, true)}
           <span class="wcard-text"><span>${esc(t.label)}</span><small>${sub}</small></span></div>
           <button type="button" class="more" data-act="menu" data-ctx="plan" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button></div>`;
-        if (car.length || rec.length) h += '<div class="wcards">' + car.map((t) => card(t, ' moved', 'Carried over')).join('')
-          + rec.map((t) => card(t, '', ICON.repeat + 'Every week')).join('') + '</div>';
+        const items = S.tasks.filter((t) => car.includes(t) || rec.includes(t));
+        if (items.length) h += '<div class="wcards">' + items.map((t) => car.includes(t) ? card(t, ' moved', 'Carried over') : card(t, '', ICON.repeat + 'Every week')).join('') + '</div>';
         h += '</div>';
       }
       h += '</section>';
@@ -1461,6 +1469,92 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     });
     $('#fab').hidden = v === 'wrap';
   }
+
+  // Tap and hold a Week or Plan card, then drag it to another day or another spot in a day.
+  let press = null, drag = null, swallowClick = false;
+  const HOLD_MS = 350;
+  function clearMarks() {
+    document.querySelectorAll('.drop-before, .drop-after, [data-zone].is-over').forEach((n) => n.classList.remove('drop-before', 'drop-after', 'is-over'));
+  }
+  function startDrag(card, x, y) {
+    const r = card.getBoundingClientRect();
+    const ghost = card.cloneNode(true);
+    ghost.classList.remove('is-pressing'); ghost.classList.add('is-ghost');
+    Object.assign(ghost.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px' });
+    document.body.appendChild(ghost);
+    card.classList.remove('is-pressing'); card.classList.add('is-dragging');
+    document.body.classList.add('is-dragging-task');
+    if (navigator.vibrate) navigator.vibrate(10);
+    drag = { id: card.dataset.drag, ctx: card.dataset.ctx, card, ghost, dy: y - r.top, zone: null, target: null, after: false, x, y };
+    const tick = () => {
+      if (!drag) return;
+      const edge = 110, vh = window.innerHeight;
+      const v = drag.y < edge ? -(edge - drag.y) / 6 : drag.y > vh - edge ? (drag.y - (vh - edge)) / 6 : 0;
+      if (v) { window.scrollBy(0, v); trackDrag(drag.x, drag.y); }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+  function trackDrag(x, y) {
+    drag.x = x; drag.y = y;
+    drag.ghost.style.top = (y - drag.dy) + 'px';
+    clearMarks();
+    const el = document.elementFromPoint(x, y);
+    const zone = el && el.closest('[data-zone]');
+    let target = el && el.closest('.wcard[data-drag]');
+    if (target === drag.card) target = null;
+    drag.zone = zone; drag.target = target && zone && zone.contains(target) ? target : null;
+    if (zone) zone.classList.add('is-over');
+    if (drag.target) {
+      const r = drag.target.getBoundingClientRect();
+      drag.after = y > r.top + r.height / 2;
+      drag.target.classList.add(drag.after ? 'drop-after' : 'drop-before');
+    }
+  }
+  function endDrag(commit) {
+    const d = drag; drag = null;
+    clearMarks();
+    document.body.classList.remove('is-dragging-task');
+    d.ghost.remove(); d.card.classList.remove('is-dragging');
+    if (!commit || !d.zone) return;
+    const t = byId(d.id), to = d.zone.dataset.zone;
+    let msg = '';
+    if (d.ctx === 'plan' && !t.repeat) {
+      if (carryDay(t) !== to) { carryOf(t).day = to; msg = `${t.label} moves to ${FULL[to]} next week`; }
+    } else if (t.day !== to) {
+      if (d.ctx === 'plan') { t.home = null; msg = `Plan updated: ${t.label} every ${FULL[to]}`; }
+      else if (t.repeat) { t.home = t.home || t.day; if (t.home === to) t.home = null; msg = `${t.label} moved to ${FULL[to]}, this week only`; }
+      else msg = `${t.label} moved to ${FULL[to]}`;
+      t.day = to;
+    }
+    if (d.target) {
+      const tgt = byId(d.target.dataset.drag);
+      S.tasks.splice(S.tasks.indexOf(t), 1);
+      S.tasks.splice(S.tasks.indexOf(tgt) + (d.after ? 1 : 0), 0, t);
+    }
+    save(); render();
+    if (msg) toast(msg);
+  }
+  document.addEventListener('pointerdown', (e) => {
+    const card = e.target.closest && e.target.closest('.wcard[data-drag]');
+    if (!card || e.button > 0 || e.target.closest('.more')) return;
+    const x = e.clientX, y = e.clientY;
+    card.classList.add('is-pressing');
+    press = { card, x, y, timer: setTimeout(() => { press = null; swallowClick = true; startDrag(card, x, y); }, HOLD_MS) };
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 8) { clearTimeout(press.timer); press.card.classList.remove('is-pressing'); press = null; }
+    if (drag) { e.preventDefault(); trackDrag(e.clientX, e.clientY); }
+  }, { passive: false });
+  document.addEventListener('touchmove', (e) => { if (drag) e.preventDefault(); }, { passive: false });
+  const release = (commit) => {
+    if (press) { clearTimeout(press.timer); press.card.classList.remove('is-pressing'); press = null; }
+    if (drag) { endDrag(commit); setTimeout(() => { swallowClick = false; }, 60); }
+  };
+  document.addEventListener('pointerup', () => release(true));
+  document.addEventListener('pointercancel', () => release(false));
+  document.addEventListener('contextmenu', (e) => { if (e.target.closest && e.target.closest('.wcard[data-drag]')) e.preventDefault(); });
+  document.addEventListener('click', (e) => { if (swallowClick) { swallowClick = false; e.stopPropagation(); e.preventDefault(); } }, true);
 
   render();
 })();
