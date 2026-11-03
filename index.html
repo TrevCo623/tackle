@@ -376,6 +376,9 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 .confirm-btns { display: flex; gap: 8px; }
 .confirm-btns button { flex: 1; min-height: 44px; border-radius: 12px; font-size: 15px; font-weight: 600; }
 .danger-btn { border: 0; background: #A3402F; color: #FFFFFF; }
+.remove-task { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); font-size: 16px; line-height: 1.35; }
+.remove-task span:last-child { min-width: 0; }
+.sheet .confirm-btns button { min-height: 54px; border-radius: 15px; font-size: 16px; }
 .removed-list { display: flex; flex-direction: column; gap: 2px; padding-top: 8px; }
 .removed-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .removed-row span { font-size: 14px; color: var(--muted); text-decoration: line-through; }
@@ -983,12 +986,6 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       if (!loose.length) h += '<p class="quiet-note">Nothing unfinished. Next week starts clean.</p>';
       h += kept.map((t) => {
         const c = carryOf(t);
-        if (c.confirm) {
-          return `<div class="carry-row is-confirm" role="group" aria-label="Confirm removing ${esc(t.label)}">
-            <p>Remove <b>${esc(t.label)}</b> from next week?</p>
-            <div class="confirm-btns"><button type="button" class="ghost-btn" data-act="carry-keep" data-id="${t.id}">Keep it</button>
-            <button type="button" class="danger-btn" data-act="carry-remove" data-id="${t.id}">Remove</button></div></div>`;
-        }
         const day = carryDay(t);
         return `<div class="carry-row">${tile(t.tag, true)}
           <span class="carry-text"><span>${esc(t.label)}</span>${t.dep ? `<small>Waiting on: ${esc(t.dep)}</small>` : (day === suggestDay(t) && !c.day ? '<small>Suggested day</small>' : '')}</span>
@@ -1048,6 +1045,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     if (sheet.kind === 'task') body = taskSheet();
     else if (sheet.kind === 'menu') body = menuSheet();
     else if (sheet.kind === 'status') body = statusSheet();
+    else if (sheet.kind === 'confirm-remove') body = confirmRemoveSheet();
     else if (sheet.kind === 'project') body = projectSheet();
     else body = planSheet();
     root.innerHTML = `<button type="button" class="scrim" data-act="close-sheet" aria-label="Close" tabindex="-1"></button>
@@ -1197,6 +1195,16 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); commit(Math.min(2, start + 1)); }
       if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); commit(Math.max(0, start - 1)); }
     });
+  }
+
+  function confirmRemoveSheet() {
+    const t = byId(sheet.id);
+    if (!t) return head('Task not found');
+    return `<div class="sheet-head"><h2 id="sheet-h">Remove from next week?</h2><button type="button" class="icon-btn" data-act="close-sheet" aria-label="Close">${ICON.close}</button></div>
+      <div class="remove-task">${tile(t.tag)}<span>${esc(t.label)}</span></div>
+      <p class="hint">It won’t carry over when you close the week. You can undo this on the Next week page.</p>
+      <div class="confirm-btns"><button type="button" class="ghost-btn" data-act="carry-keep">Keep it</button>
+        <button type="button" class="danger-btn" data-act="carry-remove">Remove</button></div>`;
   }
 
   function projectSheet() {
@@ -1367,9 +1375,9 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       case 'toggle-done': S.showDone = !S.showDone; break;
       case 'star': S.starred = S.starred === id ? null : id; break;
       case 'wrap-step': S.wrapStep = +val; window.scrollTo({ top: 0 }); break;
-      case 'carry-x': carryOf(t).confirm = true; break;
-      case 'carry-keep': carryOf(t).confirm = false; break;
-      case 'carry-remove': Object.assign(carryOf(t), { confirm: false, removed: true }); break;
+      case 'carry-x': openSheet({ kind: 'confirm-remove', id }); return;
+      case 'carry-keep': closeSheet(); return;
+      case 'carry-remove': { const m = byId(sheet.id); carryOf(m).removed = true; closeSheet(); toast('Removed from next week', false); break; }
       case 'carry-undo': carryOf(t).removed = false; break;
       case 'go-wrap': location.hash = 'wrap'; return;
       case 'close-week': closeWeek(); window.scrollTo({ top: 0 }); break;
