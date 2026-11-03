@@ -10,4 +10,4 @@ A calm weekly planner: tasks live in day themes, not dates.
 - `app.js` — sign-in, sync, push opt-in · `config.js` — public Supabase URL/anon key + VAPID public key
 - `sw.js`, `manifest.webmanifest`, `icons/` — PWA
 - `supabase/setup.sql` — tables + row-level security · `supabase/schedule.sql` — hourly cron
-- `supabase/functions/daily-nudge/` — sends the push
+- `supabase/functions/daily-nudge/` — sends the push (deployed in Supabase as `quick-task`)
