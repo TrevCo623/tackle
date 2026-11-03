@@ -418,33 +418,33 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 
 /* Status slider */
 .slider {
-  --pos: 0; position: relative; height: 68px; border-radius: 18px; background: var(--surface);
+  --pos: 0; position: relative; height: 82px; border-radius: 18px; background: var(--surface);
   border: 1px solid var(--line); touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
 }
 .slider:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-.slider-stops { position: absolute; inset: 0 4px; display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; text-align: center; font-size: 14px; color: var(--muted); }
-.slider-fill {
-  position: absolute; top: 4px; bottom: 4px; left: 4px; border-radius: 14px; background: var(--line);
-  width: calc((100% - 8px) / 3 * (var(--pos) + 1)); transition: width 0.22s ease-out;
-}
+.slider-stops { position: absolute; inset: 0 4px; display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; text-align: center; font-size: 14px; color: var(--text2); }
+.slider-stops > span { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.stop-ico { display: inline-flex; color: var(--muted); }
 .slider-thumb {
-  position: absolute; top: 4px; bottom: 4px; width: calc((100% - 8px) / 3); left: calc(4px + (100% - 8px) / 3 * var(--pos));
-  display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 14px;
-  background: var(--card); color: var(--ink); font-size: 14px; font-weight: 600; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
-  transition: left 0.22s ease-out, background 0.15s;
+  position: absolute; top: 5px; bottom: 5px; width: calc((100% - 8px) / 3); left: calc(4px + (100% - 8px) / 3 * var(--pos));
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border-radius: 14px;
+  background: var(--ink); color: var(--on-ink); font-size: 14px; font-weight: 600; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+  transition: left 0.22s ease-out;
 }
-.slider.dragging .slider-thumb, .slider.dragging .slider-fill { transition: none; }
+.slider.dragging .slider-thumb { transition: none; }
 .slider.dragging { cursor: grabbing; }
-.slider-thumb .status-ico { display: inline-flex; }
-.slider-thumb.st-todo .status-ico { color: var(--faint); }
-.slider-thumb.st-doing { background: var(--amber); color: #FFFFFF; }
-.slider-thumb.st-doing .status-ico { color: #FFFFFF; }
-.slider-thumb.st-done { background: var(--ink); color: var(--on-ink); }
-.slider-thumb.st-done .status-ico { color: var(--on-ink); }
-.slider-thumb.st-done .ck { stroke: var(--ink); }
+.slider-thumb .status-ico { display: inline-flex; color: var(--on-ink); }
+.slider-thumb .ck { stroke: var(--ink); }
 .thumb-label { white-space: nowrap; }
-.slider-hint { margin-top: -6px; text-align: center; }
-@media (prefers-reduced-motion: reduce) { .slider-thumb, .slider-fill { transition: none; } }
+.hold-link { align-self: center; font-size: 13.5px; color: var(--text2); }
+.hold-form { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); }
+.hold-btns { display: flex; gap: 8px; justify-content: flex-end; padding-top: 4px; }
+.ghost-btn.small, .primary.small { min-height: 44px; width: auto; padding: 0 16px; border-radius: 12px; font-size: 15px; }
+.hold-card { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 14px; border-radius: 14px; background: var(--card); border: 1px dashed var(--faint); }
+.hold-ico { display: inline-flex; color: var(--muted); flex-shrink: 0; }
+.hold-card p { flex: 1; min-width: 0; margin: 0; display: flex; flex-direction: column; gap: 3px; font-size: 14.5px; line-height: 1.35; }
+.hold-card b { font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .slider-thumb { transition: none; } }
 
 
 /* Full-page task editor */
@@ -680,6 +680,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     chev: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
     back: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
     repeatL: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>',
+    doneO: '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="9.5"/><path d="M6.8 11.2l2.9 2.9 5.5-5.6"/></svg>',
     tick: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
     more: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
     edit: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16z"/></svg>',
@@ -1137,13 +1138,25 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     const t = byId(sheet.id);
     if (!t) return head('Task not found');
     const i = ORDER.indexOf(t.status);
-    return `<div class="sheet-head"><h2 id="sheet-h">${esc(t.label)}</h2><button type="button" class="icon-btn" data-act="close-sheet" aria-label="Close">${ICON.close}</button></div>
+    let h = `<div class="sheet-head"><h2 id="sheet-h">${esc(t.label)}</h2><button type="button" class="icon-btn" data-act="close-sheet" aria-label="Close">${ICON.close}</button></div>
       <div class="slider" id="status-slider" role="slider" tabindex="0" aria-label="Status" aria-valuemin="0" aria-valuemax="2" aria-valuenow="${i}" aria-valuetext="${STATUS[t.status]}" style="--pos:${i}">
-        <span class="slider-fill" aria-hidden="true"></span>
-        <span class="slider-stops" aria-hidden="true">${ORDER.map((k) => `<span>${STATUS[k]}</span>`).join('')}</span>
-        <span class="slider-thumb st-${t.status}" aria-hidden="true"><span class="status-ico">${ICON[t.status]}</span><span class="thumb-label">${STATUS[t.status]}</span></span>
-      </div>
-      <p class="hint slider-hint">Slide it to move the task along.</p>`;
+        <span class="slider-stops" aria-hidden="true">${ORDER.map((k) => `<span><span class="stop-ico">${ICON[k === 'done' ? 'doneO' : k]}</span>${STATUS[k]}</span>`).join('')}</span>
+        <span class="slider-thumb st-${t.status}" aria-hidden="true"><span class="status-ico">${ICON[t.status === 'done' ? 'doneO' : t.status]}</span><span class="thumb-label">${STATUS[t.status]}</span></span>
+      </div>`;
+    if (t.dep) {
+      h += `<div class="hold-card" role="status"><span class="hold-ico">${ICON.link}</span>
+        <p><span class="eyebrow">On hold</span><span>Waiting on: <b>${esc(t.dep)}</b></span></p>
+        <button type="button" class="ghost-btn small" data-act="hold-remove">Remove hold</button></div>`;
+    } else if (sheet.holdOpen) {
+      h += `<form id="hold-form" class="hold-form" novalidate>
+        <label class="eyebrow" for="f-hold">Waiting on</label>
+        <input class="field" id="f-hold" value="${esc(sheet.holdText || '')}" autocomplete="off" placeholder="Feedback, files, a signature…">
+        ${sheet.holdError ? `<p class="error">${sheet.holdError}</p>` : ''}
+        <div class="hold-btns"><button type="button" class="ghost-btn small" data-act="hold-cancel">Cancel</button><button type="submit" class="primary small">Put on hold</button></div></form>`;
+    } else {
+      h += `<button type="button" class="text-btn hold-link" data-act="hold-open">Put on hold for dependency</button>`;
+    }
+    return h;
   }
 
   function bindSlider() {
@@ -1158,7 +1171,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       el.style.setProperty('--pos', p);
       const k = ORDER[Math.round(p)];
       thumb.className = 'slider-thumb st-' + k;
-      thumb.innerHTML = `<span class="status-ico">${ICON[k]}</span><span class="thumb-label">${STATUS[k]}</span>`;
+      thumb.innerHTML = `<span class="status-ico">${ICON[k === 'done' ? 'doneO' : k]}</span><span class="thumb-label">${STATUS[k]}</span>`;
       el.classList.toggle('dragging', !!live);
     };
     const commit = (idx) => {
@@ -1308,6 +1321,9 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       case 'filter': S.filters[el.dataset.scope] = val; break;
       case 'cycle': t.status = NEXT[t.status]; break;
       case 'status': openSheet({ kind: 'status', id }); return;
+      case 'hold-open': sheet.holdOpen = true; renderSheet(); $('#f-hold').focus(); return;
+      case 'hold-cancel': sheet.holdOpen = false; sheet.holdError = ''; renderSheet(); return;
+      case 'hold-remove': { const m = byId(sheet.id); m.dep = ''; closeSheet(); toast('Hold removed. Back in Ready'); break; }
       case 'set-status': { const m = byId(sheet.id); m.status = val; closeSheet(); toast(m.status === 'done' ? 'Marked done' : m.status === 'doing' ? 'In progress' : 'Back to to do'); break; }
       case 'edit': openSheet({ kind: 'task', mode: 'edit', id, origDay: t.day, draft: { label: t.label, tag: t.tag, day: t.day, status: t.status, dep: t.dep, repeat: t.repeat, notes: t.notes || '' } }); return;
       case 'add': case 'plan-add': {
@@ -1375,6 +1391,12 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
   document.addEventListener('submit', (e) => {
     if (e.target.id === 'task-form') { e.preventDefault(); commitTask(); }
     if (e.target.id === 'project-form') { e.preventDefault(); commitProject(); }
+    if (e.target.id === 'hold-form') {
+      e.preventDefault();
+      const v = (sheet.holdText || '').trim();
+      if (!v) { sheet.holdError = 'Say what it’s waiting on.'; renderSheet(); $('#f-hold').focus(); return; }
+      const m = byId(sheet.id); m.dep = v; save(); closeSheet(); render(); toast('On hold: waiting on ' + v);
+    }
   });
 
   function commitProject() {
@@ -1395,6 +1417,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     else if (el.id === 'f-dep' && sheet) { sheet.draft.dep = el.value; }
     else if (el.id === 'p-name' && sheet) { sheet.draft.name = el.value; }
     else if (el.id === 'f-notes' && sheet) { sheet.draft.notes = el.value; }
+    else if (el.id === 'f-hold' && sheet) { sheet.holdText = el.value; }
     else if (el.dataset && el.dataset.note) { S.notes[el.dataset.note] = el.value; save(); }
   });
 
