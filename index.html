@@ -181,7 +181,23 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 }
 .day.is-today { border-color: var(--ink); }
 .day.off-col { padding: 2px 4px; background: transparent; border: 0; }
-.day-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.day-toggle {
+  display: flex; flex-direction: column; gap: 8px; width: 100%; min-height: 44px; padding: 0; border: 0;
+  background: transparent; text-align: left; color: inherit;
+}
+.day-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; width: 100%; }
+.day-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.chev-day { display: inline-flex; color: var(--muted); transition: transform 0.15s; }
+.day.is-open .chev-day { transform: rotate(90deg); }
+.day-sum { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 24px; }
+.day-sum-text { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.day-sum-icons { display: flex; gap: 4px; flex-shrink: 0; }
+.day-sum-icons .ptile { background: var(--card); }
+.more-n { font-size: 12px; color: var(--muted); align-self: center; }
+.day-body { display: flex; flex-direction: column; gap: 10px; }
+.week-tools { display: flex; justify-content: flex-end; margin: -14px 0 -10px; }
+.week-tools .text-btn { min-height: 36px; font-size: 13.5px; }
+.day.is-closed { padding-block: 12px; }
 .day-name { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .day-name > span:first-child { display: flex; align-items: center; gap: 8px; }
 .day-name strong { font-size: 17px; font-weight: 600; }
@@ -417,7 +433,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 @keyframes up { from { transform: translateY(24px); opacity: 0.6; } to { transform: none; opacity: 1; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes drop { from { transform: translate(-50%, -16px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .sheet, .toast, .notif { animation: none; } .switch::after { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .chev-day { transition: none; } .sheet, .toast, .notif { animation: none; } .switch::after { transition: none; } }
 </style>
 <style>:root{padding-top:env(safe-area-inset-top,0px)}body{margin:0}[hidden]{display:none!important}</style>
 </head>
@@ -658,32 +674,56 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     return h;
   }
 
+  function dayOpen(d) { const o = S.weekOpen || {}; return d in o ? o[d] : d === S.simDay; }
+
   function renderWeek() {
     const f = S.filters.week;
     let h = `<header class="week-head"><div class="head"><p class="eyebrow">${fmt(dateOf('Mon'))} – ${fmt(dateOf('Fri'))}</p><h1>This week</h1></div>
       <p class="legend">${ICON.repeat} = every week</p></header>`;
+    const allOpen = WEEKDAYS.every(dayOpen);
     h += chips('week');
-    h += '<div class="days" id="days" aria-label="Weekdays, scroll sideways">';
+    h += `<div class="week-tools"><button type="button" class="text-btn" data-act="toggle-all">${allOpen ? 'Collapse all' : 'Expand all'}</button></div>`;
+    h += '<div class="days" id="days">';
     for (const d of WEEKDAYS) {
       const th = THEMES[d];
       const ord = { doing: 0, todo: 1, done: 2 };
       const tasks = S.tasks.filter((t) => t.day === d && (f === 'All' || t.tag === f)).sort((a, b) => ord[a.status] - ord[b.status]);
-      const open = tasks.filter((t) => t.status !== 'done').length;
-      h += `<section class="day ${S.simDay === d ? 'is-today' : ''}" data-day="${d}" aria-label="${FULL[d]}, ${esc(th.name)}">
-        <div class="day-head"><div class="day-name"><span><span class="dot sm" style="background:${th.color}"></span><strong>${FULL[d]}</strong></span><small>${esc(th.name)}</small></div>
-        ${S.simDay === d ? '<span class="pill">Today</span>' : `<span class="day-date">${fmt(dateOf(d))}</span>`}</div>`;
-      if (tasks.length) {
-        h += '<div class="wcards">' + tasks.map((t) => {
-          const cls = (t.home ? ' moved' : '') + (t.status === 'done' ? ' is-done' : '') + (t.status === 'doing' ? ' is-doing' : '');
-          const sub = t.status === 'doing' ? 'In progress' : t.home ? 'usually ' + t.home : t.repeat ? 'Every week' : '';
-          return `<div class="wcard${cls}">
-            <button type="button" class="wcard-main" data-act="edit" data-id="${t.id}">${tile(t.tag, true)}
-              <span class="wcard-text"><span>${esc(t.label)}</span>${sub ? `<small>${t.repeat && !t.home && t.status !== 'doing' ? ICON.repeat : ''}${sub}</small>` : ''}</span></button>
-            <button type="button" class="more" data-act="menu" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button></div>`;
-        }).join('') + '</div>';
-        h += `<p class="count">${open} open</p>`;
-      } else {
-        h += `<p class="empty-day">Nothing here${f === 'All' ? '' : ' for ' + esc(f)}.</p>`;
+      const openT = tasks.filter((t) => t.status !== 'done');
+      const waiting = openT.filter((t) => t.dep).length;
+      const doneN = tasks.length - openT.length;
+      const isOpen = dayOpen(d);
+      const parts = [];
+      if (!tasks.length) parts.push('Nothing planned');
+      else {
+        parts.push(openT.length ? `${openT.length} open` : 'All done');
+        if (waiting) parts.push(`${waiting} waiting`);
+        if (doneN && openT.length) parts.push(`${doneN} done`);
+      }
+      const projs = [...new Set(openT.map((t) => t.tag))];
+      const icons = projs.slice(0, 5).map((g) => tile(g, true)).join('') + (projs.length > 5 ? `<span class="more-n">+${projs.length - 5}</span>` : '');
+      h += `<section class="day ${S.simDay === d ? 'is-today' : ''} ${isOpen ? 'is-open' : 'is-closed'}" data-day="${d}" aria-label="${FULL[d]}, ${esc(th.name)}">
+        <button type="button" class="day-toggle" data-act="toggle-day" data-val="${d}" aria-expanded="${isOpen}" aria-controls="day-${d}">
+          <span class="day-head">
+            <span class="day-name"><span><span class="dot sm" style="background:${th.color}"></span><strong>${FULL[d]}</strong></span><small>${esc(th.name)}</small></span>
+            <span class="day-right">${S.simDay === d ? '<span class="pill">Today</span>' : `<span class="day-date">${fmt(dateOf(d))}</span>`}<span class="chev-day">${ICON.chev}</span></span>
+          </span>
+          <span class="day-sum"><span class="day-sum-text">${parts.join(' · ')}</span>${!isOpen && icons ? `<span class="day-sum-icons" aria-hidden="true">${icons}</span>` : ''}</span>
+        </button>`;
+      if (isOpen) {
+        h += `<div id="day-${d}" class="day-body">`;
+        if (tasks.length) {
+          h += '<div class="wcards">' + tasks.map((t) => {
+            const cls = (t.home ? ' moved' : '') + (t.status === 'done' ? ' is-done' : '') + (t.status === 'doing' ? ' is-doing' : '');
+            const sub = t.status === 'doing' ? 'In progress' : t.home ? 'usually ' + t.home : t.repeat ? 'Every week' : '';
+            return `<div class="wcard${cls}">
+              <button type="button" class="wcard-main" data-act="edit" data-id="${t.id}">${tile(t.tag, true)}
+                <span class="wcard-text"><span>${esc(t.label)}</span>${sub ? `<small>${t.repeat && !t.home && t.status !== 'doing' ? ICON.repeat : ''}${sub}</small>` : ''}</span></button>
+              <button type="button" class="more" data-act="menu" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button></div>`;
+          }).join('') + '</div>';
+        } else {
+          h += `<p class="empty-day">Nothing here${f === 'All' ? '' : ' for ' + esc(f)}.</p>`;
+        }
+        h += '</div>';
       }
       h += '</section>';
     }
@@ -995,7 +1035,9 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       case 'loose': S.loose[id] = val; break;
       case 'close-week': closeWeek(); window.scrollTo({ top: 0 }); break;
       case 'dismiss-closed': S.closed = null; S.simDay = 'Mon'; location.hash = 'today'; break;
-      case 'sim-day': S.simDay = val; S.showDone = false; break;
+      case 'sim-day': S.simDay = val; S.showDone = false; S.weekOpen = {}; break;
+      case 'toggle-day': S.weekOpen = Object.assign({}, S.weekOpen, { [val]: !dayOpen(val) }); break;
+      case 'toggle-all': { const to = !WEEKDAYS.every(dayOpen); S.weekOpen = {}; WEEKDAYS.forEach((d) => { S.weekOpen[d] = to; }); break; }
       case 'copy': S.notifCopy = val; break;
       case 'notify': showNotif(); return;
       case 'notif-open': $('#notif').hidden = true; if (view() !== 'today') { location.hash = 'today'; return; } break;
@@ -1038,19 +1080,9 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
   let lastView = null, lastSimDay = null;
   function render() {
     const v = view();
-    const oldDays = $('#days');
-    const keepScroll = v === 'week' && lastView === 'week' && lastSimDay === S.simDay && oldDays ? oldDays.scrollLeft : null;
     $('#proto').innerHTML = renderProto();
     $('#app').innerHTML = v === 'today' ? renderToday() : v === 'week' ? renderWeek() : renderWrap();
     $('#app').classList.toggle('is-wrap', v === 'wrap');
-    if (v === 'week') {
-      const days = $('#days');
-      if (keepScroll !== null) days.scrollLeft = keepScroll;
-      else {
-        const col = days.querySelector('.day.is-today') || (S.simDay === 'Sat' || S.simDay === 'Sun' ? days.querySelector('.off-col') : null);
-        days.scrollLeft = col ? col.offsetLeft - parseFloat(getComputedStyle(days).scrollPaddingLeft || 0) : 0;
-      }
-    }
     lastView = v; lastSimDay = S.simDay;
     document.querySelectorAll('.tab').forEach((tab) => {
       if (tab.dataset.v === v) tab.setAttribute('aria-current', 'page'); else tab.removeAttribute('aria-current');
