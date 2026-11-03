@@ -354,9 +354,10 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 }
 .carry { display: flex; flex-direction: column; gap: 8px; }
 .carry-row {
-  display: flex; align-items: center; gap: 10px; min-height: 60px; padding: 8px 4px 8px 12px; border-radius: 14px;
+  display: flex; align-items: center; gap: 10px; min-height: 60px; padding: 8px 10px 8px 12px; border-radius: 14px;
   background: var(--card); border: 1px solid var(--line);
 }
+.carry-row .x-btn { width: 36px; margin-right: -8px; }
 .carry-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .carry-text span { font-size: 15px; line-height: 1.3; }
 .carry-text small { font-size: 12px; color: var(--muted); }
@@ -989,9 +990,9 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
         const day = carryDay(t);
         return `<div class="carry-row">${tile(t.tag, true)}
           <span class="carry-text"><span>${esc(t.label)}</span>${t.dep ? `<small>Waiting on: ${esc(t.dep)}</small>` : (day === suggestDay(t) && !c.day ? '<small>Suggested day</small>' : '')}</span>
+          <button type="button" class="x-btn" data-act="carry-x" data-id="${t.id}" aria-label="Remove ${esc(t.label)} from next week">${ICON.close}</button>
           <label class="day-pick"><span class="sr-only">Day for ${esc(t.label)}</span>
-            <select data-carry="${t.id}">${WEEKDAYS.map((w) => `<option value="${w}"${w === day ? ' selected' : ''}>${w}</option>`).join('')}</select></label>
-          <button type="button" class="x-btn" data-act="carry-x" data-id="${t.id}" aria-label="Remove ${esc(t.label)} from next week">${ICON.close}</button></div>`;
+            <select data-carry="${t.id}">${WEEKDAYS.map((w) => `<option value="${w}"${w === day ? ' selected' : ''}>${w}</option>`).join('')}</select></label></div>`;
       }).join('');
       if (removed.length) {
         h += '<div class="removed-list"><p class="eyebrow">Removed</p>' + removed.map((t) =>
