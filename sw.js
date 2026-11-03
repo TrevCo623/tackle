@@ -1,5 +1,5 @@
 /* Tackle service worker: offline shell + daily nudge. Bump VERSION to refresh the cache. */
-const VERSION = 'tackle-v2';
+const VERSION = 'tackle-v3';
 const SHELL = ['./', './index.html', './app.js', './config.js', './vendor/supabase.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -15,7 +15,7 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || url.origin !== location.origin || url.pathname.includes('/prototype/')) return;
   // Network first so updates land right away; fall back to the cached shell offline.
   e.respondWith(
-    fetch(e.request).then((res) => {
+    fetch(e.request, { cache: 'no-cache' }).then((res) => {
       const copy = res.clone();
       caches.open(VERSION).then((c) => c.put(e.request, copy));
       return res;
