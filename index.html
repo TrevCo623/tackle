@@ -444,6 +444,39 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 .slider-hint { margin-top: -6px; text-align: center; }
 @media (prefers-reduced-motion: reduce) { .slider-thumb, .slider-fill { transition: none; } }
 
+
+/* Full-page task editor */
+.sheet.is-page {
+  width: min(100%, 430px); height: 100%; max-height: none; border-radius: 0; animation: none;
+  padding-top: calc(8px + env(safe-area-inset-top, 0px)); gap: 0;
+}
+.page-top { display: flex; justify-content: flex-end; min-height: 44px; }
+.task-page { gap: 30px !important; padding-bottom: 12px; }
+.task-head { display: flex; flex-direction: column; gap: 10px; }
+.task-title { font-size: 32px; line-height: 1.02; overflow-wrap: anywhere; }
+.rename { align-self: flex-start; min-height: 32px; font-size: 13px; }
+.title-input {
+  width: 100%; border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; background: transparent; padding: 4px 0 8px;
+  font-family: var(--display); font-size: 30px; line-height: 1.05; text-transform: uppercase; color: var(--ink); resize: none;
+}
+.title-input::placeholder { color: var(--faint); }
+.title-input:focus { outline: none; border-bottom-color: var(--amber); }
+.day-list { display: flex; flex-direction: column; gap: 2px; padding: 5px; border-radius: 16px; background: var(--surface); }
+.day-opt { display: flex; align-items: center; gap: 8px; border-radius: 12px; }
+.day-opt.is-on { background: var(--card); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); padding-right: 8px; }
+.day-pick-btn {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 14px; border: 0;
+  background: transparent; text-align: left; color: var(--ink);
+}
+.day-pick-btn strong { font-size: 17px; font-weight: 500; }
+.day-opt.is-on .day-pick-btn strong { font-weight: 600; }
+.day-pick-btn span { font-size: 13px; color: var(--text2); padding-top: 2px; }
+.repeat-btn {
+  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 40px; height: 40px;
+  padding: 0; border-radius: 20px; border: 1px solid var(--line2); background: var(--card); color: var(--muted);
+}
+.repeat-btn.is-on { padding: 0 14px 0 11px; background: var(--ink); border-color: var(--ink); color: var(--on-ink); font-size: 14px; font-weight: 600; }
+
 /* Segmented controls */
 .seg { display: grid; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface); }
 .seg button {
@@ -636,6 +669,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     link: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
     chev: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
     back: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
+    repeatL: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>',
     tick: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
     more: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
     edit: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16z"/></svg>',
@@ -1006,7 +1040,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     else if (sheet.kind === 'project') body = projectSheet();
     else body = planSheet();
     root.innerHTML = `<button type="button" class="scrim" data-act="close-sheet" aria-label="Close" tabindex="-1"></button>
-      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h"><span class="grab" aria-hidden="true"></span>${body}</div>`;
+      <div class="sheet${sheet.kind === 'task' ? ' is-page' : ''}" role="dialog" aria-modal="true" aria-labelledby="sheet-h">${sheet.kind === 'task' ? '' : '<span class="grab" aria-hidden="true"></span>'}${body}</div>`;
     root.hidden = false;
     if (sheet.kind === 'status') bindSlider();
   }
@@ -1017,16 +1051,17 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 
   function taskSheet() {
     const D = sheet.draft, isEdit = sheet.mode === 'edit';
-    let h = head(isEdit ? 'Edit task' : 'New task') + '<form id="task-form" novalidate>';
-    h += `<div class="field-group"><label for="f-label">Task</label><input class="field" id="f-label" value="${esc(D.label)}" autocomplete="off" placeholder="What needs doing?">
-      ${sheet.error ? `<p class="error">${sheet.error}</p>` : ''}</div>`;
-    if (isEdit) {
-      h += '<div class="field-group"><p class="eyebrow">Status</p><div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))" role="group" aria-label="Status">' +
-        ['todo', 'doing', 'done'].map((k) => `<button type="button" data-act="d-status" data-val="${k}" aria-pressed="${D.status === k}">${STATUS[k]}</button>`).join('') + '</div></div>';
+    const naming = !isEdit || sheet.renaming;
+    let h = `<div class="page-top"><button type="button" class="icon-btn back-x" data-act="close-sheet" aria-label="Close without saving">${ICON.close}</button></div>`;
+    h += '<form id="task-form" novalidate class="task-page">';
+    h += `<header class="task-head"><p class="eyebrow" id="sheet-h">${isEdit ? 'Edit task' : 'New task'}</p>`;
+    if (naming) {
+      h += `<label class="sr-only" for="f-label">Task name</label><textarea class="title-input" id="f-label" rows="2" autocomplete="off" placeholder="What needs doing?">${esc(D.label)}</textarea>`;
+    } else {
+      h += `<h1 class="task-title">${esc(D.label)}</h1><button type="button" class="text-btn rename" data-act="rename">Change task name</button>`;
     }
-    h += '<div class="field-group"><p class="eyebrow">Day</p><div class="seg" style="grid-template-columns:repeat(5,minmax(0,1fr))" role="group" aria-label="Day">' +
-      WEEKDAYS.map((d) => `<button type="button" data-act="d-day" data-val="${d}" aria-pressed="${D.day === d}">${d}</button>`).join('') + '</div>';
-    h += `<p class="hint">${esc(THEMES[D.day].name)}${isEdit && D.repeat && sheet.origDay !== D.day ? ' · changes your weekly plan' : ''}</p></div>`;
+    if (sheet.error) h += `<p class="error">${sheet.error}</p>`;
+    h += '</header>';
     const cur = projectOf(D.tag);
     h += `<div class="field-group"><p class="eyebrow" id="proj-lbl">Project</p>
       <div class="dd">
@@ -1036,10 +1071,22 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
           `<button type="button" role="option" class="dd-opt" data-act="d-tag" data-val="${esc(p.name)}" aria-selected="${D.tag === p.name}"><span class="ptile sm">${picon(p.icon, 14)}</span><span>${esc(p.name)}</span>${D.tag === p.name ? `<span class="dd-check">${ICON.tick}</span>` : ''}</button>`).join('')}
           <button type="button" class="dd-opt dd-new" data-act="new-project"><span class="ptile sm dashed"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span>New project</span></button></div>` : ''}
       </div></div>`;
-    h += `<div class="switch-row"><p><strong>Every week</strong><span class="hint">Comes back on ${FULL[D.day]} each week.</span></p>
-      <button type="button" class="switch" role="switch" aria-checked="${D.repeat}" aria-label="Repeat every week" data-act="d-repeat"></button></div>`;
-    h += `<div class="field-group"><label for="f-dep">Waiting on</label><input class="field" id="f-dep" value="${esc(D.dep)}" autocomplete="off" placeholder="Feedback, files, a signature…">
+    if (isEdit) {
+      h += '<div class="field-group"><p class="eyebrow">Status</p><div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))" role="group" aria-label="Status">' +
+        ['todo', 'doing', 'done'].map((k) => `<button type="button" data-act="d-status" data-val="${k}" aria-pressed="${D.status === k}">${STATUS[k]}</button>`).join('') + '</div></div>';
+    }
+    h += '<div class="field-group"><p class="eyebrow" id="day-lbl">Day</p><div class="day-list" role="radiogroup" aria-labelledby="day-lbl">' + WEEKDAYS.map((d) => {
+      const on = D.day === d;
+      return `<div class="day-opt${on ? ' is-on' : ''}">
+        <button type="button" role="radio" aria-checked="${on}" class="day-pick-btn" data-act="d-day" data-val="${d}"><strong>${FULL[d]}</strong><span>${esc(THEMES[d].name)}</span></button>
+        ${on ? `<button type="button" class="repeat-btn${D.repeat ? ' is-on' : ''}" data-act="d-repeat" aria-pressed="${D.repeat}" aria-label="${D.repeat ? 'Repeats every ' + FULL[d] + '. Tap for one time' : 'One time. Tap to repeat every ' + FULL[d]}">${ICON.repeatL}${D.repeat ? '<span>Weekly</span>' : ''}</button>` : ''}
+      </div>`;
+    }).join('') + '</div>';
+    if (isEdit && D.repeat && sheet.origDay !== D.day) h += `<p class="hint">Moves it to ${FULL[D.day]}s in your weekly plan.</p>`;
+    h += '</div>';
+    h += `<div class="field-group"><label class="eyebrow" for="f-dep">Waiting on something</label><input class="field" id="f-dep" value="${esc(D.dep)}" autocomplete="off" placeholder="Feedback, files, a signature…">
       <p class="hint">Anything here moves the task to “Waiting.”</p></div>`;
+    h += `<div class="field-group"><label class="eyebrow" for="f-notes">Notes</label><textarea class="area" id="f-notes" rows="4" placeholder="Links, details, what done looks like…">${esc(D.notes || '')}</textarea></div>`;
     h += `<div class="sheet-actions"><button type="submit" class="primary">${isEdit ? 'Save' : 'Add task'}</button>
       ${isEdit ? '<button type="button" class="text-btn danger" data-act="delete">Delete task</button>' : ''}</div></form>`;
     return h;
@@ -1212,8 +1259,8 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
   function commitTask() {
     const D = sheet.draft;
     const label = D.label.trim();
-    if (!label) { sheet.error = 'Give the task a name.'; renderSheet(); $('#f-label').focus(); return; }
-    const clean = { label, tag: D.tag, day: D.day, status: D.status, dep: D.dep.trim(), repeat: D.repeat };
+    if (!label) { sheet.error = 'Give the task a name.'; sheet.renaming = true; renderSheet(); $('#f-label').focus(); return; }
+    const clean = { label, tag: D.tag, day: D.day, status: D.status, dep: D.dep.trim(), repeat: D.repeat, notes: (D.notes || '').trim() };
     if (sheet.mode === 'edit') {
       const t = byId(sheet.id);
       if (t.day !== clean.day) t.home = null;
@@ -1254,7 +1301,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       case 'cycle': t.status = NEXT[t.status]; break;
       case 'status': openSheet({ kind: 'status', id }); return;
       case 'set-status': { const m = byId(sheet.id); m.status = val; closeSheet(); toast(m.status === 'done' ? 'Marked done' : m.status === 'doing' ? 'In progress' : 'Back to to do'); break; }
-      case 'edit': openSheet({ kind: 'task', mode: 'edit', id, origDay: t.day, draft: { label: t.label, tag: t.tag, day: t.day, status: t.status, dep: t.dep, repeat: t.repeat } }); return;
+      case 'edit': openSheet({ kind: 'task', mode: 'edit', id, origDay: t.day, draft: { label: t.label, tag: t.tag, day: t.day, status: t.status, dep: t.dep, repeat: t.repeat, notes: t.notes || '' } }); return;
       case 'add': case 'plan-add': {
         const day = THEMES[S.simDay] ? S.simDay : 'Mon';
         const tag = S.filters.today !== 'All' ? S.filters.today : 'Business';
@@ -1265,6 +1312,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       case 'd-tag': sheet.draft.tag = val; sheet.projOpen = false; renderSheet(); return;
       case 'proj-toggle': sheet.projOpen = !sheet.projOpen; renderSheet(); return;
       case 'd-repeat': sheet.draft.repeat = !sheet.draft.repeat; renderSheet(); return;
+      case 'rename': sheet.renaming = true; renderSheet(); { const i = $('#f-label'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); } return;
       case 'delete': {
         const i = S.tasks.indexOf(byId(sheet.id));
         lastDeleted = { task: S.tasks[i], i };
@@ -1279,7 +1327,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       case 'm-day': sheet.to = val; renderSheet(); return;
       case 'm-scope': sheet.scope = val; renderSheet(); return;
       case 'do-move': doMove(); return;
-      case 'menu-edit': { const m = byId(sheet.id); openSheet({ kind: 'task', mode: 'edit', id: m.id, origDay: m.day, draft: { label: m.label, tag: m.tag, day: m.day, status: m.status, dep: m.dep, repeat: m.repeat } }); return; }
+      case 'menu-edit': { const m = byId(sheet.id); openSheet({ kind: 'task', mode: 'edit', id: m.id, origDay: m.day, draft: { label: m.label, tag: m.tag, day: m.day, status: m.status, dep: m.dep, repeat: m.repeat, notes: m.notes || '' } }); return; }
       case 'menu-done': { const m = byId(sheet.id); m.status = m.status === 'done' ? 'todo' : 'done'; closeSheet(); toast(m.status === 'done' ? 'Marked done' : 'Back to to do'); break; }
       case 'menu-delete': {
         const i = S.tasks.indexOf(byId(sheet.id));
@@ -1338,6 +1386,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     if (el.id === 'f-label' && sheet) { sheet.draft.label = el.value; }
     else if (el.id === 'f-dep' && sheet) { sheet.draft.dep = el.value; }
     else if (el.id === 'p-name' && sheet) { sheet.draft.name = el.value; }
+    else if (el.id === 'f-notes' && sheet) { sheet.draft.notes = el.value; }
     else if (el.dataset && el.dataset.note) { S.notes[el.dataset.note] = el.value; save(); }
   });
 
@@ -1346,7 +1395,10 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     if (el.dataset && el.dataset.carry) { const t = byId(el.dataset.carry); if (t) { carryOf(t).day = el.value; save(); render(); } }
   });
 
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sheet) closeSheet(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sheet) closeSheet();
+    if (e.key === 'Enter' && e.target.id === 'f-label') { e.preventDefault(); }
+  });
   window.addEventListener('hashchange', () => { render(); window.scrollTo({ top: 0 }); });
 
   let lastView = null, lastSimDay = null;
