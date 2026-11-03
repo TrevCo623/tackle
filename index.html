@@ -390,6 +390,29 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 .plan-item .rep { display: inline-flex; color: var(--faint); }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
+
+/* Project dropdown */
+.dd { display: flex; flex-direction: column; gap: 6px; }
+.dd-btn {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 54px; padding: 0 12px 0 10px;
+  border-radius: 12px; border: 1px solid var(--line2); background: var(--card); text-align: left;
+}
+.dd-val { flex: 1; min-width: 0; font-size: 16px; }
+.dd-chev { display: inline-flex; color: var(--muted); transform: rotate(90deg); transition: transform 0.15s; }
+.dd-btn[aria-expanded="true"] { border-color: var(--ink); }
+.dd-btn[aria-expanded="true"] .dd-chev { transform: rotate(-90deg); }
+.dd-list { display: flex; flex-direction: column; padding: 4px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
+.dd-opt {
+  display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 0 10px; border: 0; border-radius: 9px;
+  background: transparent; text-align: left; font-size: 15px; color: var(--ink);
+}
+.dd-opt > span:nth-child(2) { flex: 1; }
+.dd-opt[aria-selected="true"] { background: var(--surface); font-weight: 600; }
+.dd-check { display: inline-flex; color: var(--ink); }
+.dd-new { color: var(--text2); border-top: 1px solid var(--line); border-radius: 0 0 9px 9px; margin-top: 4px; }
+.ptile.dashed { background: transparent; border-style: dashed; }
+@media (prefers-reduced-motion: reduce) { .dd-chev { transition: none; } }
+
 /* Segmented controls */
 .seg { display: grid; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface); }
 .seg button {
@@ -582,6 +605,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     link: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
     chev: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
     back: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
+    tick: '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
     more: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
     edit: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16z"/></svg>',
     check: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.2l2.7 2.7L16 9.6"/></svg>',
@@ -971,9 +995,15 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     h += '<div class="field-group"><p class="eyebrow">Day</p><div class="seg" style="grid-template-columns:repeat(5,minmax(0,1fr))" role="group" aria-label="Day">' +
       WEEKDAYS.map((d) => `<button type="button" data-act="d-day" data-val="${d}" aria-pressed="${D.day === d}">${d}</button>`).join('') + '</div>';
     h += `<p class="hint">${esc(THEMES[D.day].name)}${isEdit && D.repeat && sheet.origDay !== D.day ? ' · changes your weekly plan' : ''}</p></div>`;
-    h += '<div class="field-group"><p class="eyebrow">Project</p><div class="tag-chips" role="group" aria-label="Project">' +
-      S.projects.map((p) => `<button type="button" class="chip" data-act="d-tag" data-val="${esc(p.name)}" aria-pressed="${D.tag === p.name}"><span class="ico">${picon(p.icon, 15)}</span>${esc(p.name)}</button>`).join('') +
-      `<button type="button" class="chip add" data-act="new-project"><span class="ico"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>New project</button></div></div>`;
+    const cur = projectOf(D.tag);
+    h += `<div class="field-group"><p class="eyebrow" id="proj-lbl">Project</p>
+      <div class="dd">
+        <button type="button" class="dd-btn" data-act="proj-toggle" aria-haspopup="listbox" aria-expanded="${!!sheet.projOpen}" aria-labelledby="proj-lbl proj-cur">
+          <span class="ptile">${picon(cur.icon)}</span><span id="proj-cur" class="dd-val">${esc(cur.name)}</span><span class="dd-chev">${ICON.chev}</span></button>
+        ${sheet.projOpen ? `<div class="dd-list" role="listbox" aria-labelledby="proj-lbl">${S.projects.map((p) =>
+          `<button type="button" role="option" class="dd-opt" data-act="d-tag" data-val="${esc(p.name)}" aria-selected="${D.tag === p.name}"><span class="ptile sm">${picon(p.icon, 14)}</span><span>${esc(p.name)}</span>${D.tag === p.name ? `<span class="dd-check">${ICON.tick}</span>` : ''}</button>`).join('')}
+          <button type="button" class="dd-opt dd-new" data-act="new-project"><span class="ptile sm dashed"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span>New project</span></button></div>` : ''}
+      </div></div>`;
     h += `<div class="switch-row"><p><strong>Every week</strong><span class="hint">Comes back on ${FULL[D.day]} each week.</span></p>
       <button type="button" class="switch" role="switch" aria-checked="${D.repeat}" aria-label="Repeat every week" data-act="d-repeat"></button></div>`;
     h += `<div class="field-group"><label for="f-dep">Waiting on</label><input class="field" id="f-dep" value="${esc(D.dep)}" autocomplete="off" placeholder="Feedback, files, a signature…">
@@ -1154,7 +1184,8 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       }
       case 'd-status': sheet.draft.status = val; renderSheet(); return;
       case 'd-day': sheet.draft.day = val; renderSheet(); return;
-      case 'd-tag': sheet.draft.tag = val; renderSheet(); return;
+      case 'd-tag': sheet.draft.tag = val; sheet.projOpen = false; renderSheet(); return;
+      case 'proj-toggle': sheet.projOpen = !sheet.projOpen; renderSheet(); return;
       case 'd-repeat': sheet.draft.repeat = !sheet.draft.repeat; renderSheet(); return;
       case 'delete': {
         const i = S.tasks.indexOf(byId(sheet.id));
@@ -1219,7 +1250,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     S.projects.push({ name, icon: P.icon, day: (sheet.back && sheet.back.draft && sheet.back.draft.day) || 'Mon' });
     save();
     const back = sheet.back;
-    back.draft.tag = name;
+    back.draft.tag = name; back.projOpen = false;
     openSheet(back);
     toast('Project created');
   }
