@@ -395,7 +395,6 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 .plan-day-head strong { font-size: 16px; font-weight: 600; }
 .plan-day-head small { font-size: 13px; color: var(--text2); }
 .plan-day .quiet-note { margin: 0; font-size: 13.5px; }
-.plan-day .wcard { padding-right: 12px; }
 .plan-item { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 4px 10px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); }
 .plan-item > span:nth-child(2) { flex: 1; min-width: 0; font-size: 14.5px; }
 .plan-item em { font-style: normal; font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
@@ -1015,7 +1014,8 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
         h += `<div class="plan-day"><div class="plan-day-head">${themeIcon(w)}<strong>${FULL[w]}</strong><small>${esc(THEMES[w].name)}</small></div>`;
         if (!rec.length && !car.length) h += '<p class="quiet-note">Nothing yet.</p>';
         const card = (t, cls, sub) => `<div class="wcard${cls}"><div class="wcard-main">${tile(t.tag, true)}
-          <span class="wcard-text"><span>${esc(t.label)}</span><small>${sub}</small></span></div></div>`;
+          <span class="wcard-text"><span>${esc(t.label)}</span><small>${sub}</small></span></div>
+          <button type="button" class="more" data-act="menu" data-ctx="plan" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button></div>`;
         if (car.length || rec.length) h += '<div class="wcards">' + car.map((t) => card(t, ' moved', 'Carried over')).join('')
           + rec.map((t) => card(t, '', ICON.repeat + 'Every week')).join('') + '</div>';
         h += '</div>';
@@ -1117,19 +1117,20 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
         <button type="button" data-act="menu-done">${ICON.check}${doneLabel}</button>
         <button type="button" class="danger" data-act="menu-delete">${ICON.trash}Delete task</button></div>`;
     }
+    const curDay = sheet.plan ? (t.repeat ? (t.home || t.day) : carryDay(t)) : t.day;
     let h = `<div class="sheet-head"><div class="preview-chip"><button type="button" class="back-btn" data-act="menu-back" aria-label="Back">${ICON.back}</button><h2 id="sheet-h" class="move-title">Move “${esc(t.label)}”</h2></div>${closeBtn}</div>`;
     h += '<div class="field-group"><p class="eyebrow">Move to</p><div class="targets" role="group" aria-label="Move to day">' + WEEKDAYS.map((d) => {
-      const cur = d === t.day;
+      const cur = d === curDay;
       return `<button type="button" class="${cur ? 'is-current' : ''}" data-act="m-day" data-val="${d}" aria-pressed="${sheet.to === d}"${cur ? ' aria-label="' + FULL[d] + ', current day"' : ''}>${themeIcon(d, 18)}<span class="t-day">${d}</span><span class="t-theme">${THEMES[d].short}</span></button>`;
     }).join('') + '</div></div>';
-    const ready = sheet.to && sheet.to !== t.day;
-    if (ready && t.repeat) {
+    const ready = sheet.to && sheet.to !== curDay;
+    if (ready && t.repeat && !sheet.plan) {
       const wk = sheet.scope === 'week';
       h += `<div class="options" role="group" aria-label="How long">
         <button type="button" class="option" data-act="m-scope" data-val="week" aria-pressed="${wk}"><span class="radio"></span><span><strong>Just this week</strong><span>Back on ${t.home || t.day} next week.</span></span></button>
         <button type="button" class="option" data-act="m-scope" data-val="every" aria-pressed="${!wk}"><span class="radio"></span><span><strong>Every week</strong><span>Updates your weekly plan.</span></span></button></div>`;
     }
-    const label = !ready ? 'Pick a day' : t.repeat && sheet.scope === 'every' ? 'Move to ' + FULL[sheet.to] + 's' : 'Move to ' + FULL[sheet.to];
+    const label = !ready ? 'Pick a day' : t.repeat && (sheet.scope === 'every' || sheet.plan) ? 'Move to ' + FULL[sheet.to] + 's' : 'Move to ' + FULL[sheet.to];
     h += `<button type="button" class="primary" data-act="do-move"${ready ? '' : ' disabled'}>${label}</button>`;
     return h;
   }
@@ -1308,6 +1309,11 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
   function doMove() {
     const t = byId(sheet.id), to = sheet.to;
     let msg;
+    if (sheet.plan && !t.repeat) {
+      carryOf(t).day = to;
+      save(); closeSheet(); render(); toast(`${t.label} moves to ${FULL[to]} next week`); return;
+    }
+    if (sheet.plan) sheet.scope = 'every';
     if (t.repeat) {
       if (sheet.scope === 'week') {
         t.home = t.home || t.day;
@@ -1356,7 +1362,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       case 'undo':
         if (lastDeleted) { S.tasks.splice(lastDeleted.i, 0, lastDeleted.task); lastDeleted = null; $('#toast').hidden = true; }
         break;
-      case 'menu': openSheet({ kind: 'menu', id, to: null, scope: 'week' }); return;
+      case 'menu': openSheet({ kind: 'menu', id, to: null, scope: 'week', plan: el.dataset.ctx === 'plan' }); return;
       case 'menu-move': sheet.step = 'move'; renderSheet(); return;
       case 'menu-back': sheet.step = null; sheet.to = null; renderSheet(); return;
       case 'm-day': sheet.to = val; renderSheet(); return;
