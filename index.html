@@ -9,7 +9,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F7F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#191917" media="(prefers-color-scheme: dark)">
-<title>Tackle Prototype</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Tackle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gasoek+One&family=Archivo:wght@400;500;600;700&display=swap">
@@ -102,6 +105,18 @@ h2 { margin: 0; font-family: var(--display); font-size: 20px; font-weight: 400; 
 }
 .plan-btn strong { display: block; font-size: 16px; font-weight: 500; }
 h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
+.head { position: relative; }
+.acct-btn { position: absolute; top: -6px; right: 0; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line2); background: var(--surface); color: var(--ink); font-family: var(--mono); font-size: 13px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; }
+body.is-gated .tabbar, body.is-gated .fab { display: none; }
+.gate { min-height: 70vh; display: flex; flex-direction: column; justify-content: center; gap: 22px; }
+.gate h1 { font-size: 56px; }
+.gate .lede { max-width: 18em; }
+.google-btn { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 54px; border-radius: 15px; border: 1px solid var(--line2); background: var(--card); color: var(--ink); font-size: 16px; font-weight: 600; }
+.acct-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-top: 1px solid var(--line); }
+.acct-row:first-of-type { border-top: 0; }
+.acct-row p { margin: 0; }
+.acct-row small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.acct-row .ghost-btn { flex-shrink: 0; min-height: 40px; padding: 0 14px; font-size: 14px; white-space: nowrap; }
 #app.is-wrap { gap: 30px; }
 
 .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
@@ -620,7 +635,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 <body>
 
 <div class="shell">
-  <div class="proto" id="proto" aria-label="Prototype controls"></div>
+  <div class="proto" id="proto" hidden></div>
   <main id="app"></main>
 </div>
 
@@ -647,9 +662,14 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 <div id="toast" class="toast" role="status" hidden></div>
 <button id="notif" class="notif" data-act="notif-open" hidden></button>
 
+<script src="config.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="app.js"></script>
 <script>
 (function () {
-  const KEY = 'tackle-prototype-v3';
+  // APP is set by the real-app build (window.TACKLE_APP); the prototype leaves it undefined.
+  const APP = window.TACKLE_APP || null;
+  const KEY = APP ? 'tackle-app-v1' : 'tackle-prototype-v3';
   const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
   const ALLDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const FULL = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
@@ -716,12 +736,14 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   const nid = () => 't' + Date.now().toString(36) + (counter++).toString(36);
   const realDay = () => ALLDAYS[(new Date().getDay() + 6) % 7];
 
-  const now = new Date();
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+  const thisMonday = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate() - ((n.getDay() + 6) % 7)); };
+  const isoDay = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  let monday = thisMonday();
   const dateOf = (day) => { const d = new Date(monday); d.setDate(monday.getDate() + ALLDAYS.indexOf(day)); return d; };
   const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
   function seed() {
+    if (APP) return freshState();
     const t = (label, day, tag, o) => Object.assign({ id: nid(), label, day, tag, status: 'todo', dep: '', repeat: false, home: null }, o || {});
     return {
       tasks: [
@@ -765,15 +787,54 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     };
   }
 
+  function freshState() {
+    return {
+      tasks: [],
+      projects: [
+        { name: 'Business', icon: 'chart' },
+        { name: 'Website', icon: 'globe' },
+        { name: 'Writing', icon: 'pen' },
+        { name: 'Personal', icon: 'home' }
+      ],
+      simDay: realDay(), weekOf: isoDay(thisMonday()),
+      filters: { today: 'All', week: 'All' },
+      starred: null, notes: { proud: '', better: '', next: '' }, carry: {},
+      wrapStep: 1, streak: 0, closed: null, notifCopy: 'theme', showDone: false
+    };
+  }
+
+  // Real app: when a new week starts without a Wrap, quietly reset it (forgiving: open work stays on its day).
+  function rollWeek() {
+    if (!APP) return;
+    const cur = isoDay(thisMonday());
+    if (!S.weekOf) S.weekOf = cur;
+    if (S.weekOf < cur) {
+      S.tasks = S.tasks.filter((t) => {
+        if (t.status === 'done' && !t.repeat) return false;
+        if (t.repeat) t.status = 'todo';
+        if (t.home) { t.day = t.home; t.home = null; }
+        return true;
+      });
+      if (!S.closed) S.streak = 0;
+      S.closed = null; S.carry = {}; S.wrapStep = 1; S.notes = { proud: '', better: '', next: '' }; S.weekOpen = {};
+      S.weekOf = cur;
+    }
+    // After closing the week on Friday or the weekend, Week shows the week ahead.
+    const ahead = new Date(S.weekOf + 'T00:00:00');
+    monday = ahead > thisMonday() ? ahead : thisMonday();
+  }
+
   function load() {
     try { const raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
   }
   function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable; prototype still works for this visit */ }
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable; works for this visit */ }
+    if (APP && window.TackleSync) window.TackleSync.push(S);
   }
 
   let S = load() || seed();
   S.carry = S.carry || {}; S.wrapStep = S.wrapStep || 1;
+  if (APP) { S.simDay = realDay(); rollWeek(); }
   let sheet = null;      // { kind: 'task'|'move'|'plan', ... }
   let lastDeleted = null;
   let resetArmed = false;
@@ -827,13 +888,15 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     };
   }
 
+  const acctBtn = () => APP && APP.user ? `<button type="button" class="acct-btn" data-act="account" aria-label="Account and reminders">${esc((APP.user().initial || '·'))}</button>` : '';
+
   /* ---------- Screens ---------- */
   function renderToday() {
     const d = S.simDay;
     const date = FULL[d] + ' · ' + fmt(dateOf(d));
     if (!THEMES[d]) {
       const monCount = S.tasks.filter((t) => t.day === 'Mon' && t.status !== 'done').length;
-      return `<header class="head"><p class="eyebrow">${esc(date)}</p><h1 class="today-title">Today is for resting</h1>
+      return `<header class="head">${acctBtn()}<p class="eyebrow">${esc(date)}</p><h1 class="today-title">Today is for resting</h1>
         <p class="lede">Weekends are blank on purpose.</p></header>
         <section class="next-card"><p class="eyebrow">Up next</p>
         <div class="title-row">${themeIcon('Mon')}<strong>Monday · ${THEMES.Mon.name}</strong></div>
@@ -841,7 +904,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     }
     const th = THEMES[d];
     const L = todayLists(d, S.filters.today);
-    let h = `<header class="head"><p class="eyebrow">${esc(date)}</p>
+    let h = `<header class="head">${acctBtn()}<p class="eyebrow">${esc(date)}</p>
       <h1 class="today-title">Today is for ${esc(th.phrase)}</h1></header>`;
     if (d === 'Mon') {
       h += `<button type="button" class="plan-btn" data-act="plan"><strong>Make a plan for the week</strong>${ICON.arrow}</button>`;
@@ -1058,6 +1121,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     else if (sheet.kind === 'status') body = statusSheet();
     else if (sheet.kind === 'confirm-remove') body = confirmRemoveSheet();
     else if (sheet.kind === 'project') body = projectSheet();
+    else if (sheet.kind === 'account') body = APP.accountSheet(head, esc);
     else body = planSheet();
     root.innerHTML = `<button type="button" class="scrim" data-act="close-sheet" aria-label="Close" tabindex="-1"></button>
       <div class="sheet${sheet.kind === 'task' ? ' is-page' : ''}" role="dialog" aria-modal="true" aria-labelledby="sheet-h">${sheet.kind === 'task' ? '' : '<span class="grab" aria-hidden="true"></span>'}${body}</div>`;
@@ -1293,6 +1357,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       return true;
     });
     S.streak += 1;
+    if (APP) { const n = new Date(thisMonday()); n.setDate(n.getDate() + 7); S.weekOf = isoDay(n); }
     S.closed = { wins, rolled, dropped, star: star ? star.label : null };
     S.starred = null; S.carry = {}; S.wrapStep = 1; S.notes = { proud: '', better: '', next: '' };
   }
@@ -1398,12 +1463,17 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       case 'carry-undo': carryOf(t).removed = false; break;
       case 'go-wrap': location.hash = 'wrap'; return;
       case 'close-week': closeWeek(); window.scrollTo({ top: 0 }); break;
-      case 'dismiss-closed': S.closed = null; S.simDay = 'Mon'; S.weekOpen = {}; location.hash = 'week'; break;
+      case 'dismiss-closed': S.closed = null; if (!APP) S.simDay = 'Mon'; S.weekOpen = {}; if (APP) rollWeek(); location.hash = 'week'; break;
       case 'sim-day': S.simDay = val; S.showDone = false; S.weekOpen = {}; break;
       case 'toggle-day': S.weekOpen = Object.assign({}, S.weekOpen, { [val]: !dayOpen(val) }); break;
       case 'toggle-all': { const to = !WEEKDAYS.every(dayOpen); S.weekOpen = {}; WEEKDAYS.forEach((d) => { S.weekOpen[d] = to; }); break; }
       case 'copy': S.notifCopy = val; break;
       case 'notify': showNotif(); return;
+      case 'account': openSheet({ kind: 'account' }); return;
+      case 'sign-in': APP.signIn(); return;
+      case 'sign-out': closeSheet(); APP.signOut(); return;
+      case 'push-on': APP.pushOn().then(() => renderSheet()); return;
+      case 'push-off': APP.pushOff().then(() => renderSheet()); return;
       case 'notif-open': $('#notif').hidden = true; if (view() !== 'today') { location.hash = 'today'; return; } break;
       case 'reset':
         if (!resetArmed) { resetArmed = true; $('#proto').innerHTML = renderProto(); return; }
@@ -1460,7 +1530,11 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   let lastView = null, lastSimDay = null;
   function render() {
     const v = view();
-    $('#proto').innerHTML = renderProto();
+    if (APP) {
+      $('#proto').hidden = true;
+      if (APP.gate) { const g = APP.gate(); if (g) { $('#app').innerHTML = g; document.body.classList.add('is-gated'); return; } }
+      document.body.classList.remove('is-gated');
+    } else $('#proto').innerHTML = renderProto();
     $('#app').innerHTML = v === 'today' ? renderToday() : v === 'week' ? renderWeek() : renderWrap();
     $('#app').classList.toggle('is-wrap', v === 'wrap');
     lastView = v; lastSimDay = S.simDay;
@@ -1555,6 +1629,18 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   document.addEventListener('pointercancel', () => release(false));
   document.addEventListener('contextmenu', (e) => { if (e.target.closest && e.target.closest('.wcard[data-drag]')) e.preventDefault(); });
   document.addEventListener('click', (e) => { if (swallowClick) { swallowClick = false; e.stopPropagation(); e.preventDefault(); } }, true);
+
+  if (APP) {
+    APP.getState = () => S;
+    APP.setState = (next) => { S = next; S.carry = S.carry || {}; S.wrapStep = S.wrapStep || 1; S.simDay = realDay(); rollWeek(); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ } if (!sheet) render(); };
+    APP.fresh = freshState;
+    APP.render = () => { if (sheet && sheet.kind === 'account') renderSheet(); else render(); };
+    APP.toast = toast;
+    const tickDay = () => { const d = realDay(); const before = S.weekOf; S.simDay = d; rollWeek(); if (d !== lastSimDay || S.weekOf !== before) { save(); render(); } };
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) tickDay(); });
+    window.addEventListener('focus', tickDay);
+    setInterval(tickDay, 60000);
+  }
 
   render();
 })();
