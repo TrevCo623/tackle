@@ -395,6 +395,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 .plan-day-head strong { font-size: 16px; font-weight: 600; }
 .plan-day-head small { font-size: 13px; color: var(--text2); }
 .plan-day .quiet-note { margin: 0; font-size: 13.5px; }
+.plan-day .wcard { padding-right: 12px; }
 .plan-item { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 4px 10px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); }
 .plan-item > span:nth-child(2) { flex: 1; min-width: 0; font-size: 14.5px; }
 .plan-item em { font-style: normal; font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
@@ -1013,8 +1014,10 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
         const car = loose.filter((t) => carryDay(t) === w);
         h += `<div class="plan-day"><div class="plan-day-head">${themeIcon(w)}<strong>${FULL[w]}</strong><small>${esc(THEMES[w].name)}</small></div>`;
         if (!rec.length && !car.length) h += '<p class="quiet-note">Nothing yet.</p>';
-        h += car.map((t) => `<div class="plan-item is-carried">${tile(t.tag, true)}<span>${esc(t.label)}</span><em>Carried over</em></div>`).join('');
-        h += rec.map((t) => `<div class="plan-item">${tile(t.tag, true)}<span>${esc(t.label)}</span><em class="rep">${ICON.repeat}</em></div>`).join('');
+        const card = (t, cls, sub) => `<div class="wcard${cls}"><div class="wcard-main">${tile(t.tag, true)}
+          <span class="wcard-text"><span>${esc(t.label)}</span><small>${sub}</small></span></div></div>`;
+        if (car.length || rec.length) h += '<div class="wcards">' + car.map((t) => card(t, ' moved', 'Carried over')).join('')
+          + rec.map((t) => card(t, '', ICON.repeat + 'Every week')).join('') + '</div>';
         h += '</div>';
       }
       h += '</section>';
