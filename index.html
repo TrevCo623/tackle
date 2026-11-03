@@ -413,6 +413,37 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 .ptile.dashed { background: transparent; border-style: dashed; }
 @media (prefers-reduced-motion: reduce) { .dd-chev { transition: none; } }
 
+
+/* Status slider */
+.slider {
+  --pos: 0; position: relative; height: 68px; border-radius: 18px; background: var(--surface);
+  border: 1px solid var(--line); touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+}
+.slider:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.slider-stops { position: absolute; inset: 0 4px; display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; text-align: center; font-size: 14px; color: var(--muted); }
+.slider-fill {
+  position: absolute; top: 4px; bottom: 4px; left: 4px; border-radius: 14px; background: var(--line);
+  width: calc((100% - 8px) / 3 * (var(--pos) + 1)); transition: width 0.22s ease-out;
+}
+.slider-thumb {
+  position: absolute; top: 4px; bottom: 4px; width: calc((100% - 8px) / 3); left: calc(4px + (100% - 8px) / 3 * var(--pos));
+  display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 14px;
+  background: var(--card); color: var(--ink); font-size: 14px; font-weight: 600; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+  transition: left 0.22s ease-out, background 0.15s;
+}
+.slider.dragging .slider-thumb, .slider.dragging .slider-fill { transition: none; }
+.slider.dragging { cursor: grabbing; }
+.slider-thumb .status-ico { display: inline-flex; }
+.slider-thumb.st-todo .status-ico { color: var(--faint); }
+.slider-thumb.st-doing { background: var(--amber); color: #FFFFFF; }
+.slider-thumb.st-doing .status-ico { color: #FFFFFF; }
+.slider-thumb.st-done { background: var(--ink); color: var(--on-ink); }
+.slider-thumb.st-done .status-ico { color: var(--on-ink); }
+.slider-thumb.st-done .ck { stroke: var(--ink); }
+.thumb-label { white-space: nowrap; }
+.slider-hint { margin-top: -6px; text-align: center; }
+@media (prefers-reduced-motion: reduce) { .slider-thumb, .slider-fill { transition: none; } }
+
 /* Segmented controls */
 .seg { display: grid; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface); }
 .seg button {
@@ -977,6 +1008,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     root.innerHTML = `<button type="button" class="scrim" data-act="close-sheet" aria-label="Close" tabindex="-1"></button>
       <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h"><span class="grab" aria-hidden="true"></span>${body}</div>`;
     root.hidden = false;
+    if (sheet.kind === 'status') bindSlider();
   }
 
   function head(title) {
@@ -1045,12 +1077,58 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     return h;
   }
 
+  const ORDER = ['todo', 'doing', 'done'];
   function statusSheet() {
     const t = byId(sheet.id);
     if (!t) return head('Task not found');
+    const i = ORDER.indexOf(t.status);
     return `<div class="sheet-head"><h2 id="sheet-h">${esc(t.label)}</h2><button type="button" class="icon-btn" data-act="close-sheet" aria-label="Close">${ICON.close}</button></div>
-      <div class="status-opts" role="group" aria-label="Status">${['todo', 'doing', 'done'].map((k) =>
-        `<button type="button" class="status-opt st-${k}" data-act="set-status" data-val="${k}" aria-pressed="${t.status === k}"><span class="status-ico">${ICON[k]}</span>${STATUS[k]}</button>`).join('')}</div>`;
+      <div class="slider" id="status-slider" role="slider" tabindex="0" aria-label="Status" aria-valuemin="0" aria-valuemax="2" aria-valuenow="${i}" aria-valuetext="${STATUS[t.status]}" style="--pos:${i}">
+        <span class="slider-fill" aria-hidden="true"></span>
+        <span class="slider-stops" aria-hidden="true">${ORDER.map((k) => `<span>${STATUS[k]}</span>`).join('')}</span>
+        <span class="slider-thumb st-${t.status}" aria-hidden="true"><span class="status-ico">${ICON[t.status]}</span><span class="thumb-label">${STATUS[t.status]}</span></span>
+      </div>
+      <p class="hint slider-hint">Slide it to move the task along.</p>`;
+  }
+
+  function bindSlider() {
+    const el = $('#status-slider');
+    if (!el) return;
+    const t = byId(sheet.id);
+    const thumb = el.querySelector('.slider-thumb');
+    let start = ORDER.indexOf(t.status), pos = start, down = false, moved = false, x0 = 0;
+    const geo = () => { const r = el.getBoundingClientRect(); return { left: r.left + 4, step: (r.width - 8) / 3 }; };
+    const posAt = (x) => { const g = geo(); return Math.max(0, Math.min(2, (x - g.left) / g.step - 0.5)); };
+    const paint = (p, live) => {
+      el.style.setProperty('--pos', p);
+      const k = ORDER[Math.round(p)];
+      thumb.className = 'slider-thumb st-' + k;
+      thumb.innerHTML = `<span class="status-ico">${ICON[k]}</span><span class="thumb-label">${STATUS[k]}</span>`;
+      el.classList.toggle('dragging', !!live);
+    };
+    const commit = (idx) => {
+      paint(idx, false);
+      el.setAttribute('aria-valuenow', idx); el.setAttribute('aria-valuetext', STATUS[ORDER[idx]]);
+      if (idx === start) return;
+      try { navigator.vibrate && navigator.vibrate(12); } catch (e) {}
+      t.status = ORDER[idx]; save();
+      const msg = idx === 2 ? 'Moved to Done' : idx === 1 ? 'Moved to In progress' : 'Moved back to To do';
+      setTimeout(() => { if (sheet && sheet.kind === 'status') { closeSheet(); render(); toast(msg); } }, 420);
+      start = idx;
+    };
+    el.addEventListener('pointerdown', (e) => { down = true; moved = false; x0 = e.clientX; el.setPointerCapture(e.pointerId); });
+    el.addEventListener('pointermove', (e) => {
+      if (!down) return;
+      if (!moved && Math.abs(e.clientX - x0) < 4) return;
+      moved = true; pos = posAt(e.clientX); paint(pos, true);
+    });
+    const end = (e) => { if (!down) return; down = false; pos = moved ? pos : posAt(e.clientX); commit(Math.round(pos)); };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', () => { down = false; paint(start, false); });
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); commit(Math.min(2, start + 1)); }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); commit(Math.max(0, start - 1)); }
+    });
   }
 
   function projectSheet() {
