@@ -100,7 +100,7 @@ h2 { margin: 0; font-family: var(--display); font-size: 20px; font-weight: 400; 
 }
 .plan-btn strong { display: block; font-size: 16px; font-weight: 500; }
 h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
-#app.is-wrap { gap: 64px; }
+#app.is-wrap { gap: 30px; }
 
 .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
 .chips::-webkit-scrollbar { display: none; }
@@ -132,6 +132,22 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 .row-meta .flag { color: var(--amber-text); }
 .row-meta .rep { display: inline-flex; align-items: center; gap: 3px; }
 .row-meta svg { width: 11px; height: 11px; }
+.pglyph { display: inline-flex; align-items: center; color: var(--ink2); }
+.pglyph svg { width: 13px; height: 13px; }
+.row-meta > * + *::before { content: "·"; margin-right: 6px; color: var(--faint); }
+.row-meta > .pglyph + *::before { content: none; }
+.row .more { margin-right: -10px; }
+.waiting-icon.status { color: var(--faint); }
+.status-opts { display: flex; flex-direction: column; gap: 8px; }
+.status-opt {
+  display: flex; align-items: center; gap: 14px; min-height: 58px; padding: 0 16px; border-radius: 14px;
+  border: 1px solid var(--line); background: var(--card); font-size: 16px; color: var(--ink); text-align: left;
+}
+.status-opt[aria-pressed="true"] { border: 1.5px solid var(--ink); font-weight: 600; }
+.status-ico { display: inline-flex; }
+.status-opt.st-todo .status-ico { color: var(--faint); }
+.status-opt.st-doing .status-ico { color: var(--amber); }
+.status-opt.st-done .status-ico { color: var(--ink); }
 .waiting-icon { flex-shrink: 0; width: 22px; display: flex; justify-content: center; color: var(--faint); }
 .dep { color: var(--text2); }
 .dep b { font-weight: 600; color: var(--ink2); }
@@ -322,6 +338,58 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
   background: transparent; color: var(--on-hero); font-size: 14px;
 }
 
+
+/* Wrap flow */
+.stepper { display: flex; flex-direction: column; gap: 10px; margin-bottom: -8px; }
+.step-bars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.step-bars span { height: 3px; border-radius: 2px; background: var(--line); }
+.step-bars span.on { background: var(--ink); }
+.wrap-nav { display: flex; gap: 10px; }
+.wrap-nav .primary { flex: 1; }
+.ghost-btn {
+  min-height: 54px; padding: 0 20px; border-radius: 15px; border: 1px solid var(--line2); background: transparent;
+  font-size: 16px; font-weight: 500; color: var(--ink);
+}
+.carry { display: flex; flex-direction: column; gap: 8px; }
+.carry-row {
+  display: flex; align-items: center; gap: 10px; min-height: 60px; padding: 8px 4px 8px 12px; border-radius: 14px;
+  background: var(--card); border: 1px solid var(--line);
+}
+.carry-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.carry-text span { font-size: 15px; line-height: 1.3; }
+.carry-text small { font-size: 12px; color: var(--muted); }
+.day-pick select {
+  appearance: none; -webkit-appearance: none; min-height: 36px; padding: 0 26px 0 12px; border-radius: 18px;
+  border: 1px solid var(--line2); background: var(--surface); font: inherit; font-size: 14px; font-weight: 600; color: var(--ink);
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 14px) 52%, calc(100% - 10px) 52%; background-size: 4px 4px; background-repeat: no-repeat;
+}
+.x-btn {
+  flex-shrink: 0; width: 40px; height: 44px; border: 0; background: transparent; color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+}
+.x-btn svg { width: 18px; height: 18px; }
+.carry-row.is-confirm { flex-direction: column; align-items: stretch; gap: 10px; padding: 14px; border-color: var(--ink); }
+.carry-row.is-confirm p { margin: 0; font-size: 15px; line-height: 1.4; }
+.confirm-btns { display: flex; gap: 8px; }
+.confirm-btns button { flex: 1; min-height: 44px; border-radius: 12px; font-size: 15px; font-weight: 600; }
+.danger-btn { border: 0; background: #A3402F; color: #FFFFFF; }
+.removed-list { display: flex; flex-direction: column; gap: 2px; padding-top: 8px; }
+.removed-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.removed-row span { font-size: 14px; color: var(--muted); text-decoration: line-through; }
+.plan-list { display: flex; flex-direction: column; gap: 10px; }
+.plan-day { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 16px; background: var(--surface); }
+.plan-day-head { display: flex; align-items: center; gap: 8px; padding-bottom: 2px; }
+.plan-day-head strong { font-size: 16px; font-weight: 600; }
+.plan-day-head small { font-size: 13px; color: var(--text2); }
+.plan-day .quiet-note { margin: 0; font-size: 13.5px; }
+.plan-item { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 4px 10px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); }
+.plan-item > span:nth-child(2) { flex: 1; min-width: 0; font-size: 14.5px; }
+.plan-item em { font-style: normal; font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.plan-item.is-carried { border-style: dashed; border-color: var(--faint); }
+.plan-item .rep { display: inline-flex; color: var(--faint); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
 /* Segmented controls */
 .seg { display: grid; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface); }
 .seg button {
@@ -480,7 +548,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     Thu: { name: 'Wrap Up', phrase: 'wrapping up', color: 'var(--c-wrap)' },
     Fri: { name: 'Website + Personal', phrase: 'website and personal projects', color: 'var(--c-own)' }
   };
-  const WRAP_DAY = 'Thu';
+  const WRAP_DAY = 'Fri';
   const PICON = {
     briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/>',
     compass: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
@@ -570,7 +638,8 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       filters: { today: 'All', week: 'All' },
       starred: null,
       notes: { proud: '', better: '', next: '' },
-      loose: {},
+      carry: {},
+      wrapStep: 1,
       streak: 2,
       closed: null,
       notifCopy: 'theme',
@@ -586,6 +655,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
   }
 
   let S = load() || seed();
+  S.carry = S.carry || {}; S.wrapStep = S.wrapStep || 1;
   let sheet = null;      // { kind: 'task'|'move'|'plan', ... }
   let lastDeleted = null;
   let resetArmed = false;
@@ -604,26 +674,29 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       ).join('') + '</div>';
   }
 
+  const projGlyph = (name) => `<span class="pglyph" role="img" aria-label="Project: ${esc(name)}" title="${esc(name)}">${picon(projectOf(name).icon, 13)}</span>`;
+  const moreBtn = (t) => `<button type="button" class="more" data-act="menu" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button>`;
+
   function row(t, cls) {
-    const meta = [];
+    const meta = [projGlyph(t.tag)];
     if (t.status === 'doing') meta.push('<span class="flag">In progress</span>');
-    if (t.repeat && !t.home) meta.push(`<span class="rep">${ICON.repeat}Every week</span>`);
-    if (t.home) meta.push('Moved here · usually ' + t.home);
+    if (t.repeat && !t.home) meta.push('<span>Every week</span>');
+    if (t.home) meta.push('<span>Moved here · usually ' + t.home + '</span>');
     return `<div class="row st-${t.status} ${cls || ''}">
-      <button type="button" class="status" data-act="cycle" data-id="${t.id}" aria-label="${STATUS[t.status]}. Change status of ${esc(t.label)}">${ICON[t.status]}</button>
+      <button type="button" class="status" data-act="status" data-id="${t.id}" aria-label="${STATUS[t.status]}. Change status of ${esc(t.label)}" aria-haspopup="dialog">${ICON[t.status]}</button>
       <button type="button" class="row-main" data-act="edit" data-id="${t.id}">
         <span class="row-label">${esc(t.label)}</span>
-        ${meta.length ? `<span class="row-meta">${meta.join('<span aria-hidden="true">·</span>')}</span>` : ''}
-      </button>${tile(t.tag)}</div>`;
+        <span class="row-meta">${meta.join('')}</span>
+      </button>${moreBtn(t)}</div>`;
   }
 
   function waitingRow(t) {
     return `<div class="row st-${t.status}">
-      <span class="waiting-icon">${ICON.link}</span>
+      <button type="button" class="status waiting-icon" data-act="status" data-id="${t.id}" aria-label="Waiting. Change status of ${esc(t.label)}" aria-haspopup="dialog">${t.status === 'doing' ? ICON.doing : ICON.link}</button>
       <button type="button" class="row-main" data-act="edit" data-id="${t.id}">
         <span class="row-label">${esc(t.label)}</span>
-        <span class="row-meta dep">Waiting on: <b>${esc(t.dep)}</b></span>
-      </button>${tile(t.tag)}</div>`;
+        <span class="row-meta dep">${projGlyph(t.tag)}<span>Waiting on: <b>${esc(t.dep)}</b></span></span>
+      </button>${moreBtn(t)}</div>`;
   }
 
   function todayLists(day, filter) {
@@ -654,6 +727,9 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       <h1 class="today-title">Today is for ${esc(th.phrase)}</h1></header>`;
     if (d === 'Mon') {
       h += `<button type="button" class="plan-btn" data-act="plan"><strong>Make a plan for the week</strong>${ICON.arrow}</button>`;
+    }
+    if (d === WRAP_DAY) {
+      h += `<button type="button" class="plan-btn" data-act="go-wrap"><strong>Wrap up the week</strong>${ICON.arrow}</button>`;
     }
     h += chips('today');
     h += '<section class="section" aria-labelledby="ready-h"><h2 class="eyebrow" id="ready-h">Ready</h2>';
@@ -731,58 +807,122 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     return h;
   }
 
+  // Each project has a home day (its "type"). Seeded projects map to the day theme they belong to;
+  // a new project takes the day it was created on. Unknown: stay on the current day.
+  const PROJECT_HOME = { 'Client A': 'Tue', 'Client B': 'Tue', Business: 'Mon', Website: 'Fri', Writing: 'Fri', Personal: 'Fri' };
+  function suggestDay(t) {
+    const p = S.projects.find((x) => x.name === t.tag);
+    return (p && p.day) || PROJECT_HOME[t.tag] || t.day;
+  }
+  const carryOf = (t) => (S.carry[t.id] = S.carry[t.id] || {});
+  const carryDay = (t) => carryOf(t).day || suggestDay(t);
+  const looseTasks = () => S.tasks.filter((t) => !t.repeat && t.status !== 'done');
+
+  function wrapStepper(n) {
+    const names = ['This week', 'Reflect', 'Next week', 'Confirm'];
+    return `<div class="stepper" aria-label="Step ${n} of 4: ${names[n - 1]}">
+      <div class="step-bars" aria-hidden="true">${names.map((_, i) => `<span class="${i < n ? 'on' : ''}"></span>`).join('')}</div>
+      <p class="eyebrow">Step ${n} of 4 · ${names[n - 1]}</p></div>`;
+  }
+  function wrapNav(n, nextLabel) {
+    return `<div class="wrap-nav">${n > 1 ? `<button type="button" class="ghost-btn" data-act="wrap-step" data-val="${n - 1}">Back</button>` : ''}
+      <button type="button" class="primary" data-act="${n === 4 ? 'close-week' : 'wrap-step'}" data-val="${n + 1}">${nextLabel}</button></div>`;
+  }
+
   function renderWrap() {
-    const done = S.tasks.filter((t) => t.status === 'done');
     const d = S.simDay;
-    let h = '';
+    const date = d === WRAP_DAY ? FULL[WRAP_DAY] + ' · ' + fmt(dateOf(WRAP_DAY)) : 'Preview · Wrap is for ' + FULL[WRAP_DAY] + 's';
+    const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
     if (S.closed) {
       const c = S.closed;
-      h += `<section class="closed" role="status"><strong>Week closed. You earned the weekend.</strong>
-        <p>${c.wins} ${c.wins === 1 ? 'win' : 'wins'} banked · ${c.rolled} rolled forward · ${c.dropped} dropped</p>
-        <button type="button" data-act="dismiss-closed">Start next week</button></section>`;
+      return `<header class="head"><p class="eyebrow">${esc(date)}</p><h1>Week closed</h1>
+        <p class="lede">You earned the weekend.</p></header>
+        <section class="hero"><div class="hero-big"><strong>${ord(S.streak)}</strong><span>Week in a row<br>closed out</span></div>
+        <p class="hero-foot">${c.wins} ${c.wins === 1 ? 'win' : 'wins'} banked · ${c.rolled} carried to next week${c.dropped ? ` · ${c.dropped} removed` : ''}${c.star ? `<br>Proudest: ${esc(c.star)}` : ''}</p></section>
+        <button type="button" class="primary" data-act="dismiss-closed">See next week</button>`;
     }
-    h += `<header class="head"><p class="eyebrow">${d === WRAP_DAY ? FULL[WRAP_DAY] + ' · ' + fmt(dateOf(WRAP_DAY)) : 'Preview · Wrap is for ' + FULL[WRAP_DAY]}</p>
-      <h1>${done.length ? 'Good week, Trev.' : 'The week so far'}</h1>
-      <p class="lede">${done.length ? 'Look at what you moved forward.' : 'Wins land here as you finish things.'}</p></header>`;
+    const n = S.wrapStep || 1;
+    let h = wrapStepper(n);
+    const done = S.tasks.filter((t) => t.status === 'done');
 
-    const byProject = S.projects.map((p) => ({ p, n: done.filter((t) => t.tag === p.name).length })).filter((c) => c.n).sort((a, b) => b.n - a.n);
-    const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
-    h += `<section class="hero" aria-labelledby="hero-h">
-      <div class="hero-big"><strong>${done.length}</strong><span id="hero-h">${done.length === 1 ? 'Task' : 'Tasks'} completed<br>this week</span></div>`;
-    if (done.length) {
-      h += '<ul class="tally" aria-label="By project">' + byProject.map((c) =>
-        `<li><span class="tally-ico">${picon(c.p.icon, 16)}</span><b>${c.n}</b><small>${esc(c.p.name)}</small></li>`).join('') + '</ul>';
+    if (n === 1) {
+      h += `<header class="head"><p class="eyebrow">${esc(date)}</p><h1>${done.length ? 'Good week, Trev.' : 'The week so far'}</h1>
+        <p class="lede">${done.length ? 'Look at what you moved forward.' : 'Wins land here as you finish things.'}</p></header>`;
+      const byProject = S.projects.map((p) => ({ p, n: done.filter((t) => t.tag === p.name).length })).filter((c) => c.n).sort((a, b) => b.n - a.n);
+      h += `<section class="hero" aria-labelledby="hero-h">
+        <div class="hero-big"><strong>${done.length}</strong><span id="hero-h">${done.length === 1 ? 'Task' : 'Tasks'} completed<br>this week</span></div>`;
+      if (done.length) h += '<ul class="tally" aria-label="By project">' + byProject.map((c) => `<li><span class="tally-ico">${picon(c.p.icon, 16)}</span><b>${c.n}</b><small>${esc(c.p.name)}</small></li>`).join('') + '</ul>';
+      h += `<p class="hero-foot">Close this out for your ${ord(S.streak + 1)} week in a row.</p></section>`;
+      if (done.length) {
+        h += '<section class="wins" aria-labelledby="wins-h"><div class="wins-head"><h2 id="wins-h">Proudest of</h2><span>Tap one</span></div>';
+        h += done.map((t) => {
+          const on = S.starred === t.id;
+          return `<button type="button" class="win" data-act="star" data-id="${t.id}" aria-pressed="${on}"><span class="dot sm" style="background:${THEMES[t.day].color}"></span><span>${esc(t.label)}</span>${on ? '<em>Proudest</em>' : ''}</button>`;
+        }).join('') + '</section>';
+      }
+      h += wrapNav(1, 'Next: Reflect');
     }
-    h += `<p class="hero-foot">${S.closed ? '' : 'Close this out for your '}${ord(S.closed ? S.streak : S.streak + 1)} week in a row${S.closed ? ' closed out.' : '.'}</p></section>`;
 
-    if (done.length) {
-      h += '<section class="wins" aria-labelledby="wins-h"><div class="wins-head"><h2 id="wins-h">Wins</h2><span>Tap the one you’re proudest of</span></div>';
-      h += done.map((t) => {
-        const on = S.starred === t.id;
-        return `<button type="button" class="win" data-act="star" data-id="${t.id}" aria-pressed="${on}"><span class="dot sm" style="background:${THEMES[t.day].color}"></span><span>${esc(t.label)}</span>${on ? '<em>Proudest</em>' : ''}</button>`;
+    if (n === 2) {
+      const star = S.starred && byId(S.starred);
+      h += `<header class="head"><p class="eyebrow">${esc(date)}</p><h1>Take it in</h1>
+        <p class="lede">${star ? `You picked “${esc(star.label)}” as your proudest win.` : 'A minute to notice the week before you plan the next one.'}</p></header>`;
+      h += `<section class="prompts">
+        <div class="field-group"><label for="n-proud">What are you proud of this week?</label><textarea class="area" id="n-proud" data-note="proud" rows="3">${esc(S.notes.proud)}</textarea></div>
+        <div class="field-group"><label for="n-better">What did you get better at?</label><textarea class="area" id="n-better" data-note="better" rows="3">${esc(S.notes.better)}</textarea></div></section>`;
+      h += wrapNav(2, 'Next: Next week');
+    }
+
+    if (n === 3) {
+      const loose = looseTasks();
+      const kept = loose.filter((t) => !carryOf(t).removed);
+      const removed = loose.filter((t) => carryOf(t).removed);
+      h += `<header class="head"><p class="eyebrow">${esc(date)}</p><h1>Next week</h1>
+        <p class="lede">Everything unfinished moves to next week. Each task gets a suggested day; change it or remove what you’re done with.</p></header>`;
+      h += '<section class="carry" aria-label="Moving to next week">';
+      if (!loose.length) h += '<p class="quiet-note">Nothing unfinished. Next week starts clean.</p>';
+      h += kept.map((t) => {
+        const c = carryOf(t);
+        if (c.confirm) {
+          return `<div class="carry-row is-confirm" role="group" aria-label="Confirm removing ${esc(t.label)}">
+            <p>Remove <b>${esc(t.label)}</b> from next week?</p>
+            <div class="confirm-btns"><button type="button" class="ghost-btn" data-act="carry-keep" data-id="${t.id}">Keep it</button>
+            <button type="button" class="danger-btn" data-act="carry-remove" data-id="${t.id}">Remove</button></div></div>`;
+        }
+        const day = carryDay(t);
+        return `<div class="carry-row">${tile(t.tag, true)}
+          <span class="carry-text"><span>${esc(t.label)}</span>${t.dep ? `<small>Waiting on: ${esc(t.dep)}</small>` : (day === suggestDay(t) && !c.day ? '<small>Suggested day</small>' : '')}</span>
+          <label class="day-pick"><span class="sr-only">Day for ${esc(t.label)}</span>
+            <select data-carry="${t.id}">${WEEKDAYS.map((w) => `<option value="${w}"${w === day ? ' selected' : ''}>${w}</option>`).join('')}</select></label>
+          <button type="button" class="x-btn" data-act="carry-x" data-id="${t.id}" aria-label="Remove ${esc(t.label)} from next week">${ICON.close}</button></div>`;
       }).join('');
+      if (removed.length) {
+        h += '<div class="removed-list"><p class="eyebrow">Removed</p>' + removed.map((t) =>
+          `<div class="removed-row"><span>${esc(t.label)}</span><button type="button" class="text-btn" data-act="carry-undo" data-id="${t.id}">Undo</button></div>`).join('') + '</div>';
+      }
       h += '</section>';
+      h += `<div class="field-group"><label for="n-next">What should next week start with?</label><textarea class="area" id="n-next" data-note="next" rows="2">${esc(S.notes.next)}</textarea></div>`;
+      h += wrapNav(3, 'Next: Confirm');
     }
 
-    h += `<section class="prompts" aria-labelledby="take-h"><h2 id="take-h">Take it in</h2>
-      <div class="field-group"><label for="n-proud">What are you proud of this week?</label><textarea class="area" id="n-proud" data-note="proud" rows="2">${esc(S.notes.proud)}</textarea></div>
-      <div class="field-group"><label for="n-better">What did you get better at?</label><textarea class="area" id="n-better" data-note="better" rows="2">${esc(S.notes.better)}</textarea></div></section>`;
-
-    const loose = S.tasks.filter((t) => !t.repeat && t.status !== 'done');
-    h += '<section class="before" aria-labelledby="before-h"><h2 class="eyebrow" id="before-h">Before you go</h2>';
-    if (loose.length) {
-      h += loose.map((t) => {
-        const c = S.loose[t.id] || 'keep';
-        return `<div class="loose ${c === 'drop' ? 'is-drop' : ''}"><span>${esc(t.label)}</span>
-          <div class="seg small" role="group" aria-label="What to do with ${esc(t.label)}">
-            <button type="button" data-act="loose" data-id="${t.id}" data-val="keep" aria-pressed="${c === 'keep'}">Next week</button>
-            <button type="button" data-act="loose" data-id="${t.id}" data-val="drop" aria-pressed="${c === 'drop'}">Drop</button></div></div>`;
-      }).join('');
-    } else {
-      h += '<p class="quiet-note">No loose ends. Everything one-off is done.</p>';
+    if (n === 4) {
+      h += `<header class="head"><p class="eyebrow">${esc(date)}</p><h1>The plan</h1>
+        <p class="lede">Here’s next week. Close the week to lock it in.</p></header>`;
+      if (S.notes.next.trim()) h += `<section class="next-card"><p class="eyebrow">Start with</p><p>${esc(S.notes.next.trim())}</p></section>`;
+      const loose = looseTasks().filter((t) => !carryOf(t).removed);
+      h += '<section class="plan-list">';
+      for (const w of WEEKDAYS) {
+        const rec = S.tasks.filter((t) => t.repeat && (t.home || t.day) === w);
+        const car = loose.filter((t) => carryDay(t) === w);
+        h += `<div class="plan-day"><div class="plan-day-head"><span class="dot sm" style="background:${THEMES[w].color}"></span><strong>${FULL[w]}</strong><small>${esc(THEMES[w].name)}</small></div>`;
+        if (!rec.length && !car.length) h += '<p class="quiet-note">Nothing yet.</p>';
+        h += car.map((t) => `<div class="plan-item is-carried">${tile(t.tag, true)}<span>${esc(t.label)}</span><em>Carried over</em></div>`).join('');
+        h += rec.map((t) => `<div class="plan-item">${tile(t.tag, true)}<span>${esc(t.label)}</span><em class="rep">${ICON.repeat}</em></div>`).join('');
+        h += '</div>';
+      }
+      h += '</section>';
+      h += wrapNav(4, 'Close the week');
     }
-    h += `<div class="field-group"><label for="n-next">What should next week start with?</label><textarea class="area" id="n-next" data-note="next" rows="2">${esc(S.notes.next)}</textarea></div></section>`;
-    h += '<button type="button" class="primary" data-act="close-week">Close the week</button>';
     return h;
   }
 
@@ -807,6 +947,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     let body = '';
     if (sheet.kind === 'task') body = taskSheet();
     else if (sheet.kind === 'menu') body = menuSheet();
+    else if (sheet.kind === 'status') body = statusSheet();
     else if (sheet.kind === 'project') body = projectSheet();
     else body = planSheet();
     root.innerHTML = `<button type="button" class="scrim" data-act="close-sheet" aria-label="Close" tabindex="-1"></button>
@@ -874,6 +1015,14 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     return h;
   }
 
+  function statusSheet() {
+    const t = byId(sheet.id);
+    if (!t) return head('Task not found');
+    return `<div class="sheet-head"><h2 id="sheet-h">${esc(t.label)}</h2><button type="button" class="icon-btn" data-act="close-sheet" aria-label="Close">${ICON.close}</button></div>
+      <div class="status-opts" role="group" aria-label="Status">${['todo', 'doing', 'done'].map((k) =>
+        `<button type="button" class="status-opt st-${k}" data-act="set-status" data-val="${k}" aria-pressed="${t.status === k}"><span class="status-ico">${ICON[k]}</span>${STATUS[k]}</button>`).join('')}</div>`;
+  }
+
   function projectSheet() {
     const P = sheet.draft;
     let h = head('New project') + '<form id="project-form" novalidate>';
@@ -935,11 +1084,13 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
   function closeWeek() {
     let wins = 0, rolled = 0, dropped = 0;
     const star = S.starred && byId(S.starred);
+    const target = {};
+    looseTasks().forEach((t) => { target[t.id] = carryDay(t); });
     S.tasks = S.tasks.filter((t) => {
       if (t.status === 'done') { wins++; if (!t.repeat) return false; }
       else if (!t.repeat) {
-        if (S.loose[t.id] === 'drop') { dropped++; return false; }
-        rolled++;
+        if (carryOf(t).removed) { dropped++; return false; }
+        t.day = target[t.id]; rolled++;
       }
       if (t.repeat) t.status = 'todo';
       if (t.home) { t.day = t.home; t.home = null; }
@@ -947,7 +1098,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     });
     S.streak += 1;
     S.closed = { wins, rolled, dropped, star: star ? star.label : null };
-    S.starred = null; S.loose = {}; S.notes = { proud: '', better: '', next: '' };
+    S.starred = null; S.carry = {}; S.wrapStep = 1; S.notes = { proud: '', better: '', next: '' };
   }
 
   function commitTask() {
@@ -993,6 +1144,8 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     switch (a) {
       case 'filter': S.filters[el.dataset.scope] = val; break;
       case 'cycle': t.status = NEXT[t.status]; break;
+      case 'status': openSheet({ kind: 'status', id }); return;
+      case 'set-status': { const m = byId(sheet.id); m.status = val; closeSheet(); toast(m.status === 'done' ? 'Marked done' : m.status === 'doing' ? 'In progress' : 'Back to to do'); break; }
       case 'edit': openSheet({ kind: 'task', mode: 'edit', id, origDay: t.day, draft: { label: t.label, tag: t.tag, day: t.day, status: t.status, dep: t.dep, repeat: t.repeat } }); return;
       case 'add': case 'plan-add': {
         const day = THEMES[S.simDay] ? S.simDay : 'Mon';
@@ -1032,9 +1185,14 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       case 'go-week': closeSheet(); location.hash = 'week'; return;
       case 'toggle-done': S.showDone = !S.showDone; break;
       case 'star': S.starred = S.starred === id ? null : id; break;
-      case 'loose': S.loose[id] = val; break;
+      case 'wrap-step': S.wrapStep = +val; window.scrollTo({ top: 0 }); break;
+      case 'carry-x': carryOf(t).confirm = true; break;
+      case 'carry-keep': carryOf(t).confirm = false; break;
+      case 'carry-remove': Object.assign(carryOf(t), { confirm: false, removed: true }); break;
+      case 'carry-undo': carryOf(t).removed = false; break;
+      case 'go-wrap': location.hash = 'wrap'; return;
       case 'close-week': closeWeek(); window.scrollTo({ top: 0 }); break;
-      case 'dismiss-closed': S.closed = null; S.simDay = 'Mon'; location.hash = 'today'; break;
+      case 'dismiss-closed': S.closed = null; S.simDay = 'Mon'; S.weekOpen = {}; location.hash = 'week'; break;
       case 'sim-day': S.simDay = val; S.showDone = false; S.weekOpen = {}; break;
       case 'toggle-day': S.weekOpen = Object.assign({}, S.weekOpen, { [val]: !dayOpen(val) }); break;
       case 'toggle-all': { const to = !WEEKDAYS.every(dayOpen); S.weekOpen = {}; WEEKDAYS.forEach((d) => { S.weekOpen[d] = to; }); break; }
@@ -1058,7 +1216,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     const P = sheet.draft, name = P.name.trim();
     if (!name) { sheet.error = 'Give the project a name.'; renderSheet(); $('#p-name').focus(); return; }
     if (S.projects.some((p) => p.name.toLowerCase() === name.toLowerCase())) { sheet.error = 'You already have a project called ' + name + '.'; renderSheet(); $('#p-name').focus(); return; }
-    S.projects.push({ name, icon: P.icon });
+    S.projects.push({ name, icon: P.icon, day: (sheet.back && sheet.back.draft && sheet.back.draft.day) || 'Mon' });
     save();
     const back = sheet.back;
     back.draft.tag = name;
@@ -1072,6 +1230,11 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
     else if (el.id === 'f-dep' && sheet) { sheet.draft.dep = el.value; }
     else if (el.id === 'p-name' && sheet) { sheet.draft.name = el.value; }
     else if (el.dataset && el.dataset.note) { S.notes[el.dataset.note] = el.value; save(); }
+  });
+
+  document.addEventListener('change', (e) => {
+    const el = e.target;
+    if (el.dataset && el.dataset.carry) { const t = byId(el.dataset.carry); if (t) { carryOf(t).day = el.value; save(); render(); } }
   });
 
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sheet) closeSheet(); });
