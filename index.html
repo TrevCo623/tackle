@@ -297,7 +297,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
 .wins-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 2px 4px; flex-wrap: wrap; }
 .wins-head span { font-size: 13px; color: var(--muted); }
 .win {
-  display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 14px; width: 100%;
+  display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 8px 14px; width: 100%;
   border-radius: 14px; background: var(--surface); border: 1px solid transparent; text-align: left;
 }
 .win[aria-pressed="true"] { background: var(--card); border-color: var(--line); }
@@ -929,17 +929,17 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
   const looseTasks = () => S.tasks.filter((t) => !t.repeat && t.status !== 'done');
 
   function wrapStepper(n) {
-    const names = ['This week', 'Reflect', 'Next week', 'Confirm'];
+    const names = ['This week', 'Next week', 'Confirm'];
     const back = n > 1
       ? `<button type="button" class="wrap-back" data-act="wrap-step" data-val="${n - 1}">${ICON.back}Back</button>`
       : `<a class="wrap-back" href="#today">${ICON.back}Back</a>`;
-    return `<div class="stepper" aria-label="Step ${n} of 4: ${names[n - 1]}">${back}
+    return `<div class="stepper" aria-label="Step ${n} of 3: ${names[n - 1]}">${back}
       <div class="step-bars" aria-hidden="true">${names.map((_, i) => `<span class="${i < n ? 'on' : ''}"></span>`).join('')}</div>
-      <p class="eyebrow">Step ${n} of 4 · ${names[n - 1]}</p></div>`;
+      <p class="eyebrow">Step ${n} of 3 · ${names[n - 1]}</p></div>`;
   }
   function wrapNav(n, nextLabel) {
     return `<div class="wrap-nav">${n > 1 ? `<button type="button" class="ghost-btn" data-act="wrap-step" data-val="${n - 1}">Back</button>` : ''}
-      <button type="button" class="primary" data-act="${n === 4 ? 'close-week' : 'wrap-step'}" data-val="${n + 1}">${nextLabel}</button></div>`;
+      <button type="button" class="primary" data-act="${n === 3 ? 'close-week' : 'wrap-step'}" data-val="${n + 1}">${nextLabel}</button></div>`;
   }
 
   function renderWrap() {
@@ -951,10 +951,10 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       return `<header class="head"><p class="eyebrow">${esc(date)}</p><h1>Week closed</h1>
         <p class="lede">You earned the weekend.</p></header>
         <section class="hero"><div class="hero-big"><strong>${ord(S.streak)}</strong><span>Week in a row<br>closed out</span></div>
-        <p class="hero-foot">${c.wins} ${c.wins === 1 ? 'win' : 'wins'} banked · ${c.rolled} carried to next week${c.dropped ? ` · ${c.dropped} removed` : ''}${c.star ? `<br>Proudest: ${esc(c.star)}` : ''}</p></section>
+        <p class="hero-foot">${c.wins} ${c.wins === 1 ? 'win' : 'wins'} banked · ${c.rolled} carried to next week${c.dropped ? ` · ${c.dropped} removed` : ''}</p></section>
         <button type="button" class="primary" data-act="dismiss-closed">See next week</button>`;
     }
-    const n = S.wrapStep || 1;
+    const n = Math.min(S.wrapStep || 1, 3);
     let h = wrapStepper(n);
     const done = S.tasks.filter((t) => t.status === 'done');
 
@@ -967,26 +967,16 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       if (done.length) h += '<ul class="tally" aria-label="By project">' + byProject.map((c) => `<li><span class="tally-ico">${picon(c.p.icon, 16)}</span><b>${c.n}</b><small>${esc(c.p.name)}</small></li>`).join('') + '</ul>';
       h += `<p class="hero-foot">Close this out for your ${ord(S.streak + 1)} week in a row.</p></section>`;
       if (done.length) {
-        h += '<section class="wins" aria-labelledby="wins-h"><div class="wins-head"><h2 id="wins-h">Proudest of</h2><span>Tap one</span></div>';
-        h += done.map((t) => {
-          const on = S.starred === t.id;
-          return `<button type="button" class="win" data-act="star" data-id="${t.id}" aria-pressed="${on}">${themeIcon(t.day)}<span>${esc(t.label)}</span>${on ? '<em>Proudest</em>' : ''}</button>`;
-        }).join('') + '</section>';
+        h += '<section class="wins" aria-labelledby="wins-h"><div class="wins-head"><h2 id="wins-h">Completed</h2></div>';
+        h += done.map((t) => `<div class="win">${tile(t.tag, true)}<span>${esc(t.label)}</span></div>`).join('') + '</section>';
       }
-      h += wrapNav(1, 'Next: Reflect');
-    }
-
-    if (n === 2) {
-      const star = S.starred && byId(S.starred);
-      h += `<header class="head"><p class="eyebrow">${esc(date)}</p><h1>Take it in</h1>
-        <p class="lede">${star ? `You picked “${esc(star.label)}” as your proudest win.` : 'A minute to notice the week before you plan the next one.'}</p></header>`;
       h += `<section class="prompts">
         <div class="field-group"><label for="n-proud">What are you proud of this week?</label><textarea class="area" id="n-proud" data-note="proud" rows="3">${esc(S.notes.proud)}</textarea></div>
         <div class="field-group"><label for="n-better">What did you get better at?</label><textarea class="area" id="n-better" data-note="better" rows="3">${esc(S.notes.better)}</textarea></div></section>`;
-      h += wrapNav(2, 'Next: Next week');
+      h += wrapNav(1, 'Next: Next week');
     }
 
-    if (n === 3) {
+    if (n === 2) {
       const loose = looseTasks();
       const kept = loose.filter((t) => !carryOf(t).removed);
       const removed = loose.filter((t) => carryOf(t).removed);
@@ -1009,10 +999,10 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
       }
       h += '</section>';
       h += `<div class="field-group"><label for="n-next">What should next week start with?</label><textarea class="area" id="n-next" data-note="next" rows="2">${esc(S.notes.next)}</textarea></div>`;
-      h += wrapNav(3, 'Next: Confirm');
+      h += wrapNav(2, 'Next: Confirm');
     }
 
-    if (n === 4) {
+    if (n === 3) {
       h += `<header class="head"><p class="eyebrow">${esc(date)}</p><h1>The plan</h1>
         <p class="lede">Here’s next week. Close the week to lock it in.</p></header>`;
       if (S.notes.next.trim()) h += `<section class="next-card"><p class="eyebrow">Start with</p><p>${esc(S.notes.next.trim())}</p></section>`;
@@ -1028,7 +1018,7 @@ h1.today-title { font-size: 32px; line-height: 1.02; max-width: 11em; }
         h += '</div>';
       }
       h += '</section>';
-      h += wrapNav(4, 'Close the week');
+      h += wrapNav(3, 'Close the week');
     }
     return h;
   }
