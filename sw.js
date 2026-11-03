@@ -1,5 +1,5 @@
 /* Tackle service worker: offline shell + daily nudge. Bump VERSION to refresh the cache. */
-const VERSION = 'tackle-v5';
+const VERSION = 'tackle-v6';
 const SHELL = ['./', './index.html', './app.js', './config.js', './vendor/supabase.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -31,7 +31,6 @@ self.addEventListener('push', (e) => {
     body: d.body || '',
     icon: 'icons/icon-192.png',
     badge: 'icons/badge-96.png',
-    tag: 'tackle-daily',
     data: { url: d.url || './#today' }
   }));
 });
