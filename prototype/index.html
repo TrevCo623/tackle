@@ -1586,18 +1586,6 @@ a.proj-row { text-decoration: none; }
       <button type="button" data-act="d-repeat-set" data-val="0" aria-pressed="${!D.repeat}">One-time</button>
       <button type="button" data-act="d-repeat-set" data-val="1" aria-pressed="${!!D.repeat}">${ICON.repeatL}Recurring</button></div>
       ${D.repeat ? `<p class="hint">Comes back every ${FULL[D.day]}.</p>` : ''}</div>`;
-    if (isEdit) {
-      if (D.dep) {
-        h += `<div class="hold-card" role="status"><span class="hold-ico">${ICON.link}</span>
-          <p><span class="eyebrow">On hold</span><span>Waiting on: <b>${esc(D.dep)}</b></span></p>
-          <button type="button" class="ghost-btn small" data-act="d-hold-remove">Remove hold</button></div>`;
-      } else if (sheet.holdOpen) {
-        h += `<div class="hold-form"><label class="eyebrow" for="f-dep">Waiting on</label>
-          <input class="field" id="f-dep" value="${esc(sheet.depDraft || '')}" autocomplete="off" placeholder="Feedback, files, a signature…">
-          <div class="hold-btns"><button type="button" class="ghost-btn small" data-act="d-hold-cancel">Cancel</button></div>
-          <p class="hint">Saving puts it on hold.</p></div>`;
-      } else h += '<button type="button" class="text-btn hold-link" data-act="d-hold-open">Put on hold for dependency</button>';
-    }
     // Day: the suggested-day box on both New and Edit; Change opens the full list.
     if (!sheet.dayOpen) {
       h += `<div class="field-group"><p class="eyebrow" id="lands-lbl">Scheduled for</p><p class="lands" id="lands" aria-labelledby="lands-lbl">${landsHTML(D.day)}</p></div>`;
@@ -1613,6 +1601,18 @@ a.proj-row { text-decoration: none; }
     h += '</div>';
     }
 
+    if (isEdit) {
+      if (D.dep) {
+        h += `<div class="hold-card" role="status"><span class="hold-ico">${ICON.link}</span>
+          <p><span class="eyebrow">On hold</span><span>Waiting on: <b>${esc(D.dep)}</b></span></p>
+          <button type="button" class="ghost-btn small" data-act="d-hold-remove">Remove hold</button></div>`;
+      } else if (sheet.holdOpen) {
+        h += `<div class="hold-form"><label class="eyebrow" for="f-dep">Waiting on</label>
+          <input class="field" id="f-dep" value="${esc(sheet.depDraft || '')}" autocomplete="off" placeholder="Feedback, files, a signature…">
+          <div class="hold-btns"><button type="button" class="ghost-btn small" data-act="d-hold-cancel">Cancel</button></div>
+          <p class="hint">Saving puts it on hold.</p></div>`;
+      } else h += '<button type="button" class="text-btn hold-link" data-act="d-hold-open">Put on hold for dependency</button>';
+    }
     h += `<div class="sheet-actions"><button type="submit" class="primary">Save</button></div></form>`;
     return h;
   }
