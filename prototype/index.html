@@ -753,6 +753,17 @@ a.proj-row { text-decoration: none; }
 .prompt-list li { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 16px; line-height: 1.4; }
 .prompt-list li span { font-family: var(--mono); font-size: 12px; color: var(--muted); padding-top: 3px; }
 .sheet-actions { display: flex; flex-direction: column; gap: 4px; }
+/* Cleared-day / cleared-week celebration */
+.cheer { position: relative; overflow: hidden; padding: 24px 22px 22px; border-radius: 20px; background: var(--mon); color: #FFFFFF; }
+.cheer-title { margin: 0; font-family: var(--display); font-size: 32px; font-weight: 400; line-height: 1; text-transform: uppercase; max-width: 70%; }
+.cheer-line { margin: 10px 0 0; font-size: 16px; line-height: 1.4; max-width: 75%; color: rgba(255, 255, 255, 0.92); }
+.cheer-sparks { position: absolute; top: 10px; right: 8px; width: 120px; height: 90px; fill: #FFFFFF; }
+.cheer-sparks path { transform-box: fill-box; transform-origin: center; }
+.cheer.pop { animation: cheer-in 0.5s cubic-bezier(.2, 1.4, .4, 1) both; }
+.cheer.pop .cheer-sparks path { animation: spark-in 0.6s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes cheer-in { from { opacity: 0; transform: translateY(8px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes spark-in { from { opacity: 0; transform: scale(0) rotate(-45deg); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .cheer.pop, .cheer.pop .cheer-sparks path { animation: none; } }
 .stale-lede { margin: -4px 0 4px; font-size: 15px; }
 .stale-list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .stale-list li { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--ink); }
@@ -1113,6 +1124,16 @@ a.proj-row { text-decoration: none; }
 
   const acctBtn = () => '';
 
+  // Celebration tile: shows when a day (or the whole week) is cleared. It pops in once per session.
+  const celebrated = new Set();
+  function celebrateHTML(key, title, line) {
+    const pop = !celebrated.has(key); celebrated.add(key);
+    const spark = (x, y, r, d) => `<path d="M${x} ${y - r}C${x + r * 0.18} ${y - r * 0.18} ${x + r * 0.18} ${y - r * 0.18} ${x + r} ${y}C${x + r * 0.18} ${y + r * 0.18} ${x + r * 0.18} ${y + r * 0.18} ${x} ${y + r}C${x - r * 0.18} ${y + r * 0.18} ${x - r * 0.18} ${y + r * 0.18} ${x - r} ${y}C${x - r * 0.18} ${y - r * 0.18} ${x - r * 0.18} ${y - r * 0.18} ${x} ${y - r}Z" style="animation-delay:${d}s"/>`;
+    return `<section class="cheer${pop ? ' pop' : ''}" role="status">
+      <svg class="cheer-sparks" viewBox="0 0 120 90" aria-hidden="true">${spark(92, 22, 14, 0.15)}${spark(64, 12, 7, 0.3)}${spark(108, 54, 8, 0.45)}${spark(74, 44, 5, 0.6)}</svg>
+      <h2 class="cheer-title">${title}</h2><p class="cheer-line">${line}</p></section>`;
+  }
+
   /* ---------- Screens ---------- */
   function renderToday() {
     const d = S.simDay;
@@ -1137,7 +1158,11 @@ a.proj-row { text-decoration: none; }
     if (d === wrapDay()) {
       h += `<button type="button" class="plan-btn" data-act="go-wrap"><strong>Wrap up the week</strong>${ICON.arrow}</button>`;
     }
-    h += chips('today');
+    const all = todayLists(d, 'All');
+    const cleared = !all.ready.length && !all.waiting.length && all.done.length;
+    if (cleared) h += celebrateHTML('day:' + d, 'Great job!', 'You tackled all your tasks today.');
+    else h += chips('today');
+    if (!cleared) {
     h += '<section class="section" aria-labelledby="ready-h"><h2 class="eyebrow" id="ready-h">Ready</h2>';
     if (L.ready.length) {
       h += L.ready.map((t) => row(t, '', 'today')).join('');
@@ -1145,6 +1170,7 @@ a.proj-row { text-decoration: none; }
       h += `<p class="quiet-note">${L.waiting.length ? 'Everything left is waiting on something.' : 'Nothing left for today. Enjoy the room.'}</p>`;
     }
     h += '</section>';
+    }
     if (L.waiting.length) {
       h += '<section class="section" aria-labelledby="wait-h"><h2 class="eyebrow" id="wait-h">Waiting on something</h2>' + L.waiting.map(waitingRow).join('') + '</section>';
     }
@@ -1337,6 +1363,8 @@ a.proj-row { text-decoration: none; }
   function renderWeek() {
     const f = S.filters.week;
     let h = `<header class="head slotted"><div class="top-slot"><p class="eyebrow">${FULL[WEEKDAYS[0]]} ${fmt(dateOf(WEEKDAYS[0]))} – ${FULL[WEEKDAYS[WEEKDAYS.length - 1]]} ${fmt(dateOf(WEEKDAYS[WEEKDAYS.length - 1]))}</p></div><h1>${esc(weekTitle())}</h1></header>`;
+    const wk = S.tasks.filter((t) => !t.next && WEEKDAYS.includes(t.day));
+    if (wk.length && wk.every((t) => t.status === 'done')) h += celebrateHTML('week:' + (S.weekOf || ''), 'Great job!', 'You tackled every task this week.');
     h += heroHTML('week');
     const allOpen = WEEKDAYS.every(dayOpen);
     h += `<div class="week-tools">${projDD('week')}<button type="button" class="text-btn" data-act="toggle-all">${allOpen ? 'Collapse all' : 'Expand all'}</button></div>`;
