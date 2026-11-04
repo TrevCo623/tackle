@@ -1107,7 +1107,7 @@ a.proj-row { text-decoration: none; }
     let h = `<${link ? 'a href="#summary" class="hero hero-link"' : 'section class="hero"'} aria-labelledby="hero-h-${where}">
       <div class="hero-big"><strong>${done.length}</strong><span id="hero-h-${where}">${done.length === 1 ? 'Task' : 'Tasks'} completed<br>this week</span></div>`;
     if (byProject.length) h += '<ul class="tally" aria-label="By project">' + byProject.map((c) => `<li><span class="tally-ico">${picon(c.p.icon, 16)}</span><b>${c.n}</b><small>${esc(c.p.name)}</small></li>`).join('') + '</ul>';
-    const foot = where === 'week' ? `Wrap it up on ${FULL[wrapDay()]}.` : where === 'wrap' ? 'Close it out when you’re ready.' : '';
+    const foot = where === 'wrap' ? 'Close it out when you’re ready.' : '';
     return h + `${foot ? `<p class="hero-foot">${foot}</p>` : ''}${link ? `<span class="hero-more">See progress${ICON.arrow}</span>` : ''}</${link ? 'a' : 'section'}>`;
   }
 
