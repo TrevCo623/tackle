@@ -647,7 +647,7 @@ a.proj-row { text-decoration: none; }
 .seg button svg { width: 15px; height: 15px; margin-right: 6px; vertical-align: -2px; }
 .title-input {
   width: 100%; border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; background: transparent; padding: 4px 0 8px;
-  font-family: var(--display); font-size: 30px; line-height: 1.05; text-transform: uppercase; color: var(--ink); resize: none;
+  font-family: var(--display); font-size: 30px; line-height: 1.05; text-transform: uppercase; color: var(--ink); resize: none; overflow: hidden;
 }
 .title-input::placeholder { color: var(--faint); }
 .title-input:focus { outline: none; border-bottom-color: var(--ink); }
@@ -1615,6 +1615,9 @@ a.proj-row { text-decoration: none; }
     return h;
   }
 
+  // The task name box grows with what's typed, so the whole name stays visible.
+  function fitTitle(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+
   function renderSheet() {
     const root = $('#sheet');
     if (!sheet) { root.hidden = true; root.innerHTML = ''; return; }
@@ -1638,6 +1641,7 @@ a.proj-row { text-decoration: none; }
       <div class="sheet${sheet.kind === 'task' || sheet.page ? ' is-page' : ''}" role="dialog" aria-modal="true" aria-labelledby="sheet-h">${sheet.kind === 'task' || sheet.page ? '' : '<span class="grab" aria-hidden="true"></span>'}${body}</div>`;
     root.hidden = false;
     if (sheet.kind === 'status' || (sheet.kind === 'task' && sheet.mode === 'edit')) bindSlider();
+    const fl = $('#f-label'); if (fl) fitTitle(fl);
   }
 
   function head(title) {
@@ -1651,7 +1655,7 @@ a.proj-row { text-decoration: none; }
     h += '<form id="task-form" novalidate class="task-page">';
     h += `<header class="task-head">`;
     if (naming) {
-      h += `<label class="sr-only" for="f-label">Task name</label><textarea class="title-input" id="f-label" rows="2" autocomplete="off" placeholder="What needs doing?">${esc(D.label)}</textarea>`;
+      h += `<label class="sr-only" for="f-label">Task name</label><textarea class="title-input" id="f-label" rows="1" autocomplete="off" placeholder="What needs doing?">${esc(D.label)}</textarea>`;
     } else {
       h += `<h1 class="task-title" data-act="rename">${esc(D.label)}</h1><button type="button" class="text-btn rename" data-act="rename">Change task name</button>`;
     }
@@ -2167,7 +2171,7 @@ a.proj-row { text-decoration: none; }
     if (el.dataset && el.dataset.rhDesc) { S.rhythm[el.dataset.rhDesc].desc = el.value; applyRhythm(); save(); return; }
     if (el.id === 'acct-name' && sheet) { sheet.nameDraft = el.value; return; }
     if (el.id === 'f-label' && sheet) {
-      sheet.draft.label = el.value;
+      sheet.draft.label = el.value; fitTitle(el);
       if (sheet.mode === 'add' && !sheet.dayTouched) {
         const nd = autoDay(el.value, sheet.draft.tag);
         if (nd !== sheet.draft.day) { sheet.draft.day = nd; const l = $('#lands'); if (l) l.innerHTML = landsHTML(nd, sheet.draft.repeat); }
