@@ -475,6 +475,10 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 .page-head { display: flex; flex-direction: column; gap: 18px; padding-top: 12px; margin-bottom: 14px; }
 .page-head .sub-back { margin: 0 0 0 -6px; }
 .sheet.is-page .proj-list { margin-top: 4px; }
+.acct-form { display: flex; flex-direction: column; gap: 20px; }
+.static-field { margin: 0; font-size: 16px; color: var(--ink); padding: 2px 0; }
+.danger-zone { display: flex; flex-direction: column; gap: 10px; margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--line); }
+.danger-outline { min-height: 50px; border-radius: 14px; border: 1px solid #A3402F; background: transparent; color: #A3402F; font-size: 15px; font-weight: 600; }
 .set-group { display: flex; flex-direction: column; margin-top: 24px; }
 .set-group:first-child { margin-top: 0; }
 .set-group > .eyebrow { margin-bottom: 6px; }
@@ -1036,7 +1040,7 @@ a.proj-row { text-decoration: none; }
 
   function dayOpen(d) { const o = S.weekOpen || {}; return d in o ? o[d] : d === S.simDay; }
 
-  const firstName = () => { const n = APP && APP.user ? (APP.user().name || '') : 'Trev'; const f = n.split(/[\s@]/)[0]; return f && !f.includes('.') ? f : ''; };
+  const firstName = () => { const n = APP && APP.user ? (APP.user().name || '') : (S.protoName || 'Trev'); const f = n.split(/[\s@]/)[0]; return f && !f.includes('.') ? f : ''; };
   function heroHTML(where) {
     const done = S.tasks.filter((t) => t.status === 'done');
     const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
@@ -1088,16 +1092,37 @@ a.proj-row { text-decoration: none; }
   }
   function renderAccount() {
     const real = APP && APP.user;
-    let h = '<section class="set-group" aria-labelledby="set-acct"><h2 class="eyebrow" id="set-acct">Account</h2>';
-    h += real ? APP.accountDetails() : '<div class="acct-row"><p><strong>Trev Connolly</strong><small>trev@example.com · Google</small></p></div>';
-    h += '</section><section class="set-group" aria-labelledby="set-notif"><h2 class="eyebrow" id="set-notif">Notifications</h2>';
-    h += real ? APP.nudgeRows() : protoNudgeRows();
-    h += `</section><section class="set-group" aria-labelledby="set-week"><h2 class="eyebrow" id="set-week">Your week</h2>
+    const u = real ? APP.user() : { name: S.protoName || 'Trev Connolly', email: 'trev@example.com' };
+    let h = `<section class="set-group" aria-labelledby="set-week"><h2 class="eyebrow" id="set-week">Your week</h2>
       <a class="proj-row rhythm-row" href="#rhythm"><span class="proj-text"><strong>Weekly rhythm</strong>
         <span class="rhythm-mini">${ALLDAYS.map((x) => `<span class="rm-row${THEMES[x] ? '' : ' is-free'}"><span class="rm-day">${x}</span>${themeIcon(x, 16)}<span class="rm-name">${esc(THEMES[x] ? THEMES[x].short : 'Free')}</span></span>`).join('')}</span></span><span class="chev">${ICON.chev}</span></a>
       <button type="button" class="proj-row" data-act="projects"><span class="proj-text"><strong>Projects</strong><small>${S.projects.length} ${S.projects.length === 1 ? 'project' : 'projects'}</small></span><span class="chev">${ICON.chev}</span></button></section>`;
+    h += '<section class="set-group" aria-labelledby="set-notif"><h2 class="eyebrow" id="set-notif">Notifications</h2>';
+    h += real ? APP.nudgeRows() : protoNudgeRows();
+    h += `</section><section class="set-group" aria-labelledby="set-acct"><h2 class="eyebrow" id="set-acct">Account</h2>
+      <button type="button" class="proj-row" data-act="account-page"><span class="proj-text"><strong>${esc(u.name || 'Your account')}</strong><small>${esc(u.email || '')} · Google</small></span><span class="chev">${ICON.chev}</span></button></section>`;
     h += real ? '<button type="button" class="ghost-btn" data-act="sign-out">Sign out</button>' : '<button type="button" class="ghost-btn" disabled>Sign out</button>';
     return '<header class="head"><h1>Settings</h1></header><div class="acct-page">' + h + '</div>';
+  }
+
+  function accountPage() {
+    const real = APP && APP.user;
+    const u = real ? APP.user() : { name: S.protoName || 'Trev Connolly', email: 'trev@example.com' };
+    const name = sheet.nameDraft != null ? sheet.nameDraft : (u.name || '');
+    return pageHead('Settings', 'close-sheet', 'Account') + `<form id="account-form" novalidate class="acct-form">
+      <div class="field-group"><label for="acct-name">Name</label><input class="field" id="acct-name" value="${esc(name)}" autocomplete="name" placeholder="Your name">
+        <p class="hint">Shown in Tackle, like “Good week, ${esc((name || 'you').split(' ')[0])}.”</p>${sheet.error ? `<p class="error">${esc(sheet.error)}</p>` : ''}</div>
+      <div class="field-group"><p class="eyebrow">Email</p><p class="static-field">${esc(u.email || '')}</p><p class="hint">From your Google account. Sign in with a different Google account to use another email.</p></div>
+      <div class="sheet-actions"><button type="submit" class="primary">Save</button></div></form>
+      <section class="danger-zone"><h2 class="eyebrow">Delete account</h2>
+        <p class="hint">Permanently erases your plan, projects, rhythm and notification settings, and removes your sign-in. This can’t be undone.</p>
+        <button type="button" class="danger-outline" data-act="acct-del-ask">Delete account</button></section>`;
+  }
+
+  function confirmDeleteAccount() {
+    return head('Delete your account?') + `<p class="hint">Everything in Tackle goes: tasks, projects, your weekly rhythm and the daily nudge. You can sign up again later, but it starts empty.</p>
+      <div class="confirm-btns"><button type="button" class="ghost-btn" data-act="acct-del-keep">Keep it</button>
+        <button type="button" class="danger-btn" data-act="acct-del">Delete</button></div>`;
   }
 
   function renderRhythm() {
@@ -1365,6 +1390,8 @@ a.proj-row { text-decoration: none; }
     else if (sheet.kind === 'project') body = projectSheet();
     else if (sheet.kind === 'projects') body = projectsSheet();
     else if (sheet.kind === 'theme') body = themeSheet();
+    else if (sheet.kind === 'account-page') body = accountPage();
+    else if (sheet.kind === 'confirm-account') body = confirmDeleteAccount();
     else if (sheet.kind === 'confirm-project') body = confirmProjectSheet();
     else if (sheet.kind === 'account') body = APP.accountSheet(head, esc);
     else body = planSheet();
@@ -1728,6 +1755,13 @@ a.proj-row { text-decoration: none; }
     switch (a) {
       case 'filter': S.filters[el.dataset.scope] = val; break;
       case 'all-day': S.allDay = val; break;
+      case 'account-page': openSheet({ kind: 'account-page', page: true }); return;
+      case 'acct-del-ask': openSheet({ kind: 'confirm-account', back: sheet }); return;
+      case 'acct-del-keep': openSheet(sheet.back); return;
+      case 'acct-del':
+        if (APP && APP.deleteAccount) { APP.deleteAccount().catch((e) => toast('Couldn’t delete your account: ' + e.message)); return; }
+        try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
+        S = seed(); applyRhythm(); closeSheet(); location.hash = 'today'; toast('Prototype: account deleted and data reset'); return;
       case 'proto-nudge': S.protoNudge = !S.protoNudge; if (S.protoNudge) toast('Daily nudge on (preview only)'); break;
       case 'rh-pick': openSheet({ kind: 'theme', day: val }); return;
       case 'rh-set': {
@@ -1838,6 +1872,13 @@ a.proj-row { text-decoration: none; }
   document.addEventListener('submit', (e) => {
     if (e.target.id === 'task-form') { e.preventDefault(); commitTask(); }
     if (e.target.id === 'project-form') { e.preventDefault(); commitProject(); }
+    if (e.target.id === 'account-form') {
+      e.preventDefault();
+      const name = ($('#acct-name').value || '').trim();
+      if (!name) { sheet.error = 'Add a name.'; renderSheet(); return; }
+      if (APP && APP.updateName) APP.updateName(name).then(() => { closeSheet(); render(); toast('Name saved'); }).catch((err) => { sheet.error = err.message; renderSheet(); });
+      else { S.protoName = name; save(); closeSheet(); render(); toast('Name saved'); }
+    }
     if (e.target.id === 'hold-form') {
       e.preventDefault();
       const v = (sheet.holdText || '').trim();
@@ -1872,6 +1913,7 @@ a.proj-row { text-decoration: none; }
     const el = e.target;
     if (el.dataset && el.dataset.rhName) { const d = el.dataset.rhName; S.rhythm[d].name = el.value; applyRhythm(); save(); const sm = el.closest('.day').querySelector('.day-name small'); if (sm) sm.textContent = THEMES[d].name; return; }
     if (el.dataset && el.dataset.rhDesc) { S.rhythm[el.dataset.rhDesc].desc = el.value; applyRhythm(); save(); return; }
+    if (el.id === 'acct-name' && sheet) { sheet.nameDraft = el.value; return; }
     if (el.id === 'f-label' && sheet) {
       sheet.draft.label = el.value;
       if (sheet.mode === 'add' && !sheet.dayTouched) {

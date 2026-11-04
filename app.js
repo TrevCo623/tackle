@@ -149,4 +149,19 @@
         <label class="time-pick"><span class="sr-only">Nudge time</span><select id="nudge-time">${TIMES.map((t) => `<option value="${t}"${t === time ? ' selected' : ''}>${label(t)}</option>`).join('')}</select></label></div>` : ''}`;
   };
   A.accountBody = () => A.accountDetails() + A.nudgeRows();
+
+  /* ---------- Account: name and deletion ---------- */
+  A.updateName = async (name) => {
+    const { data, error } = await sb.auth.updateUser({ data: { full_name: name } });
+    if (error) throw error;
+    if (data && data.user) user = data.user;
+  };
+  A.deleteAccount = async () => {
+    try { if (pushSub) { await pushSub.unsubscribe(); pushSub = null; } } catch (e) { /* ignore */ }
+    const { error } = await sb.rpc('delete_my_account'); // deletes the sign-in; plan and push rows cascade
+    if (error) throw error;
+    try { localStorage.removeItem(STATE_KEY); localStorage.removeItem(PENDING); } catch (e) { /* ignore */ }
+    await sb.auth.signOut().catch(() => {});
+    location.replace(location.pathname);
+  };
 })();

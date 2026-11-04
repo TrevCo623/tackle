@@ -25,3 +25,13 @@ create policy "own subs" on public.push_subscriptions
 
 -- Added Nov 3: per-device nudge time (safe to re-run).
 alter table public.push_subscriptions add column if not exists nudge_time text not null default '08:30';
+
+-- Added Nov 4: let a signed-in person delete their own account (their plan and push rows cascade).
+create or replace function public.delete_my_account() returns void
+language plpgsql security definer set search_path = '' as $$
+begin
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+revoke all on function public.delete_my_account() from public, anon;
+grant execute on function public.delete_my_account() to authenticated;
