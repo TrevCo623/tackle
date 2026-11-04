@@ -758,6 +758,9 @@ a.proj-row { text-decoration: none; }
 .stale-list li { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--ink); }
 .stale-list .more-n { color: var(--muted); font-size: 14px; padding-left: 34px; justify-content: flex-start; }
 .sheet-actions .ghost-btn + .text-btn { align-self: center; margin-top: 6px; }
+.stale-rows { margin-top: -6px; }
+.stale-rows .row:last-child { border-bottom: 0; }
+.sheet-actions:has([data-act=stale-today]) { gap: 10px; }
 .stale-form { display: flex; flex-direction: column; }
 .stale-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .stale-row:first-child { border-top: 1px solid var(--line); }
@@ -1581,7 +1584,14 @@ a.proj-row { text-decoration: none; }
     const list = staleList(), n = list.length;
     let h = head(`${n} unfinished ${n === 1 ? 'task' : 'tasks'}`);
     h += `<p class="lede stale-lede">Left open from earlier this week. Where should ${n === 1 ? 'it' : 'they'} go?</p>`;
-    h += '<ul class="stale-list">' + list.slice(0, 4).map((t) => `<li>${tile(t.tag, true)}<span>${esc(t.label)}</span></li>`).join('') + (n > 4 ? `<li class="more-n">and ${n - 4} more</li>` : '') + '</ul>';
+    // Same two-line rows as Today and All tasks, read-only here; the sheet grows (and scrolls past 90%) to fit.
+    h += '<div class="stale-rows">' + list.map((t) => {
+      const meta = [projGlyph(t.tag)];
+      if (t.tag) meta.push(`<span>${esc(t.tag)}</span>`);
+      meta.push(`<span>${FULL[t.day]}</span>`);
+      meta.push(t.status === 'doing' ? '<span class="flag">In progress</span>' : `<span>${t.dep ? 'Waiting' : STATUS[t.status]}</span>`);
+      return `<div class="row st-${t.status}"><span class="status" aria-hidden="true">${ICON[t.status]}</span><span class="row-main"><span class="row-label">${esc(t.label)}</span><span class="row-meta">${meta.join('')}</span></span></div>`;
+    }).join('') + '</div>';
     h += `<div class="sheet-actions"><button type="button" class="primary" data-act="stale-today">Today</button>
       <button type="button" class="ghost-btn" data-act="stale-next">Next week</button>
       <button type="button" class="text-btn" data-act="stale-choose">Let me choose</button></div>`;
