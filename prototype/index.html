@@ -719,7 +719,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   const ALLDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const FULL = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
   // Weekly rhythm: a theme per day (7 days; Sat/Sun start Off). THEMES and WEEKDAYS are derived from S.rhythm.
-  const THEME_LIB = [{"key": "plan", "name": "Plan & Set Up", "short": "Planning", "phrase": "planning the week", "desc": "Plan the week, clear the inbox, schedule, send invoices, set up anything new."}, {"key": "client", "name": "Work", "short": "Work", "phrase": "work", "desc": "Heads-down work: projects, deliverables, client or team calls, feedback rounds."}, {"key": "wrap", "name": "Wrap Up", "short": "Wrap up", "phrase": "wrapping up", "desc": "Send updates, deliver files, close loops, tidy notes and folders before the week ends."}, {"key": "deep", "name": "Deep Focus", "short": "Focus", "phrase": "deep focus", "desc": "Long, focused work with no meetings: strategy, writing, building, studying."}, {"key": "meetings", "name": "Meetings & Calls", "short": "Meetings", "phrase": "meetings and calls", "desc": "1:1s, team meetings, check-ins, interviews and calls you can batch into one day."}, {"key": "side", "name": "Side Hustle", "short": "Side hustle", "phrase": "your side hustle", "desc": "Orders, content, customer emails, product and marketing work for your side business."}, {"key": "admin", "name": "Admin & Errands", "short": "Admin", "phrase": "admin and errands", "desc": "Bills, paperwork, forms, returns, appointments to book, emails you’ve been putting off."}, {"key": "home", "name": "Home & Chores", "short": "Home", "phrase": "home and chores", "desc": "Cleaning, laundry, groceries, repairs, meal prep, things around the house."}, {"key": "social", "name": "Social Life", "short": "Social", "phrase": "seeing people", "desc": "Dinners, birthdays, RSVPs, gifts, plans with friends, catching up with people."}, {"key": "health", "name": "Health & Fitness", "short": "Health", "phrase": "health and fitness", "desc": "Workouts, doctor and dentist appointments, prescriptions, meal planning."}, {"key": "learn", "name": "Learning", "short": "Learning", "phrase": "learning something", "desc": "Courses, reading, practice, classes, certifications."}, {"key": "creative", "name": "Creative Time", "short": "Creative", "phrase": "creative work", "desc": "Writing, music, art, photography, making things just for you."}, {"key": "reset", "name": "Rest & Reset", "short": "Reset", "phrase": "resting and resetting", "desc": "Light tasks only: tidy up, plan meals, get ready for the week ahead."}];
+  const THEME_LIB = [{"key": "plan", "name": "Plan & Set Up", "short": "Planning", "phrase": "planning the week", "desc": "Plan the week, clear the inbox, schedule, send invoices, set up anything new."}, {"key": "client", "name": "Deep Work", "short": "Deep work", "phrase": "deep work", "desc": "Heads-down, focused work: projects, deliverables, writing, building. Client or team calls and feedback rounds."}, {"key": "wrap", "name": "Wrap Up", "short": "Wrap up", "phrase": "wrapping up", "desc": "Send updates, deliver files, close loops, tidy notes and folders before the week ends."}, {"key": "meetings", "name": "Meetings & Calls", "short": "Meetings", "phrase": "meetings and calls", "desc": "1:1s, team meetings, check-ins, interviews and calls you can batch into one day."}, {"key": "side", "name": "Side Hustle", "short": "Side hustle", "phrase": "your side hustle", "desc": "Orders, content, customer emails, product and marketing work for your side business."}, {"key": "admin", "name": "Admin & Errands", "short": "Admin", "phrase": "admin and errands", "desc": "Bills, paperwork, forms, returns, appointments to book, emails you’ve been putting off."}, {"key": "home", "name": "Home & Chores", "short": "Home", "phrase": "home and chores", "desc": "Cleaning, laundry, groceries, repairs, meal prep, things around the house."}, {"key": "social", "name": "Social Life", "short": "Social", "phrase": "seeing people", "desc": "Dinners, birthdays, RSVPs, gifts, plans with friends, catching up with people."}, {"key": "health", "name": "Health & Fitness", "short": "Health", "phrase": "health and fitness", "desc": "Workouts, doctor and dentist appointments, prescriptions, meal planning."}, {"key": "learn", "name": "Learning", "short": "Learning", "phrase": "learning something", "desc": "Courses, reading, practice, classes, certifications."}, {"key": "creative", "name": "Creative Time", "short": "Creative", "phrase": "creative work", "desc": "Writing, music, art, photography, making things just for you."}, {"key": "reset", "name": "Rest & Reset", "short": "Reset", "phrase": "resting and resetting", "desc": "Light tasks only: tidy up, plan meals, get ready for the week ahead."}];
   const libTheme = (key) => THEME_LIB.find((x) => x.key === key);
   const RETIRED = {"own": {"name": "Website & Personal", "desc": "Your website, portfolio, writing and personal projects."}, "money": {"name": "Money", "desc": "Budget, bills, taxes, savings, investments, cancelling subscriptions."}, "second": {"name": "Second Job", "desc": "Shifts, prep and follow-ups for your other job or gig."}, "family": {"name": "Family & Kids", "desc": "School forms and emails, pickups, activities, kids’ appointments, family plans."}, "job": {"name": "Day Job", "desc": "Work for your main job: projects, reports, emails, prep for meetings."}}; // themes removed from the library become the person's own
   const DEFAULT_RHYTHM = {
@@ -731,6 +731,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     const out = {};
     ALLDAYS.forEach((d) => {
       const x = Object.assign({}, (r && r[d]) || DEFAULT_RHYTHM[d]);
+      if (x.key === 'deep') x.key = 'client'; // Deep Focus merged into Deep Work
       if (RETIRED[x.key]) { const o = RETIRED[x.key]; x.key = 'custom'; x.name = x.name || o.name; if (x.desc == null) x.desc = o.desc; }
       const lib = libTheme(x.key);
       if (x.desc == null) x.desc = lib ? lib.desc : '';
@@ -752,7 +753,8 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     if (!Object.keys(THEMES).length) THEMES.Mon = Object.assign({}, libTheme('plan'), { desc: '' }); // never zero days
     WEEKDAYS.splice(0, WEEKDAYS.length, ...ALLDAYS.filter((d) => THEMES[d]));
   }
-  const WRAP_DAY = 'Fri';
+  // The Wrap happens on the first day themed Wrap Up; with none, on Friday.
+  const wrapDay = () => ALLDAYS.find((d) => S.rhythm && S.rhythm[d] && S.rhythm[d].key === 'wrap') || 'Fri';
   const LEGACY_HOME = { 'Client A': 'Tue', 'Client B': 'Tue', Business: 'Mon', Website: 'Fri', Writing: 'Fri', Personal: 'Fri' };
   const THEME_ICON = Object.assign({"deep": "<circle cx=\"12\" cy=\"12\" r=\"5\"/><path d=\"M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4\"/>", "meetings": "<path d=\"M4 4.5h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2z\"/><path d=\"M19 9h.5a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H19v2.5l-3.5-2.5H12\"/>", "job": "<rect x=\"3\" y=\"7\" width=\"18\" height=\"13\" rx=\"2\"/><path d=\"M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18\"/>", "side": "<path d=\"M13 2.5L4.5 14H11l-1 7.5L18.5 10H12z\"/>", "second": "<rect x=\"3\" y=\"4.5\" width=\"18\" height=\"15\" rx=\"2\"/><path d=\"M3 9.5h18M8 2.5v4M16 2.5v4M8 14h3\"/>", "admin": "<path d=\"M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/>", "home": "<path d=\"M3.5 11L12 4l8.5 7\"/><path d=\"M6 9.5V20h12V9.5\"/><path d=\"M10 20v-5h4v5\"/>", "family": "<circle cx=\"9\" cy=\"7.5\" r=\"3\"/><circle cx=\"17\" cy=\"9.5\" r=\"2.2\"/><path d=\"M3.5 20c.8-3.5 3-5.5 5.5-5.5s4.7 2 5.5 5.5\"/><path d=\"M15.5 14.8c2.4.2 4.2 1.9 5 5.2\"/>", "social": "<path d=\"M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z\"/>", "health": "<path d=\"M2.5 12h4l2.5-6 4.5 12 2.5-6h5.5\"/>", "money": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M15 9.3c-.5-.9-1.6-1.4-3-1.4-1.7 0-3 .8-3 2s1.3 1.7 3 2 3 .9 3 2.1-1.3 2-3 2c-1.4 0-2.5-.5-3-1.4M12 6v12\"/>", "learn": "<path d=\"M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z\"/><path d=\"M4 20.5v-15M20 18v3H6.5\"/>", "creative": "<path d=\"M4 20l4-1 10.5-10.5a2.1 2.1 0 0 0-3-3L5 16z\"/><path d=\"M13.5 7.5l3 3\"/>", "reset": "<path d=\"M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z\"/>", "custom": "<path d=\"M12 3.5l2.4 5 5.6.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.6-.8z\"/>", "off": "<circle cx=\"12\" cy=\"12\" r=\"8.5\" stroke-dasharray=\"2.5 3\"/>"}, {"plan": "<rect x=\"5\" y=\"4.5\" width=\"14\" height=\"17\" rx=\"2.5\"/><rect x=\"9\" y=\"2.5\" width=\"6\" height=\"4\" rx=\"1.2\"/><path d=\"M9 13.5l2 2 4-4.5\"/>", "client": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"5\"/><circle cx=\"12\" cy=\"12\" r=\"1.1\" fill=\"currentColor\" stroke=\"none\"/>", "wrap": "<path d=\"M2 12.5l5 5L18 6.5\"/><path d=\"M13 16.5l1 1 8-8\"/>", "own": "<path d=\"M11 3c.7 4.4 2.6 6.3 7 7-4.4.7-6.3 2.6-7 7-.7-4.4-2.6-6.3-7-7 4.4-.7 6.3-2.6 7-7z\"/><path d=\"M18.5 15c.3 1.7 1 2.4 2.7 2.7-1.7.3-2.4 1-2.7 2.7-.3-1.7-1-2.4-2.7-2.7 1.7-.3 2.4-1 2.7-2.7z\"/>"});
   const keyIcon = (key, label, size) => `<span class="ticon" role="img" aria-label="${esc(label)}"><svg aria-hidden="true" width="${size || 18}" height="${size || 18}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${THEME_ICON[key] || THEME_ICON.custom}</svg></span>`;
@@ -975,7 +977,8 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
         <p class="lede">Days off are blank on purpose.</p></header>
         <section class="next-card"><p class="eyebrow">Up next</p>
         <div class="title-row">${themeIcon(nd)}<strong>${FULL[nd]} · ${esc(THEMES[nd].name)}</strong></div>
-        <p>${nCount} ${nCount === 1 ? 'task' : 'tasks'} waiting for ${FULL[nd]}.</p></section>`;
+        <p>${nCount} ${nCount === 1 ? 'task' : 'tasks'} waiting for ${FULL[nd]}.</p></section>`
+        + (d === wrapDay() ? `<button type="button" class="plan-btn" data-act="go-wrap"><strong>Wrap up the week</strong>${ICON.arrow}</button>` : '');
     }
     const th = THEMES[d];
     const L = todayLists(d, S.filters.today);
@@ -984,7 +987,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     if (th.key === 'plan' && WEEKDAYS.find((x) => THEMES[x].key === 'plan') === d) {
       h += `<button type="button" class="plan-btn" data-act="plan"><strong>Make a plan for the week</strong>${ICON.arrow}</button>`;
     }
-    if (d === WRAP_DAY) {
+    if (d === wrapDay()) {
       h += `<button type="button" class="plan-btn" data-act="go-wrap"><strong>Wrap up the week</strong>${ICON.arrow}</button>`;
     }
     h += chips('today');
@@ -1016,7 +1019,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     let h = `<section class="hero" aria-labelledby="hero-h-${where}">
       <div class="hero-big"><strong>${done.length}</strong><span id="hero-h-${where}">${done.length === 1 ? 'Task' : 'Tasks'} completed<br>this week</span></div>`;
     if (byProject.length) h += '<ul class="tally" aria-label="By project">' + byProject.map((c) => `<li><span class="tally-ico">${picon(c.p.icon, 16)}</span><b>${c.n}</b><small>${esc(c.p.name)}</small></li>`).join('') + '</ul>';
-    const foot = where === 'week' ? `Wrap it up on ${FULL[WRAP_DAY]} for your ${ord(S.streak + 1)} week in a row.` : `Close this out for your ${ord(S.streak + 1)} week in a row.`;
+    const foot = where === 'week' ? `Wrap it up on ${FULL[wrapDay()]} for your ${ord(S.streak + 1)} week in a row.` : `Close this out for your ${ord(S.streak + 1)} week in a row.`;
     return h + `<p class="hero-foot">${foot}</p></section>`;
   }
 
@@ -1061,7 +1064,8 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     const open = S.rhythmOpen || { [WEEKDAYS[0]]: true };
     let h = `<a class="wrap-back sub-back" href="#account">${ICON.back}Account</a>
       <header class="head"><p class="eyebrow">Your week</p><h1>Weekly rhythm</h1>
-      <p class="lede">Give each day a theme, then say what kind of work belongs there. When you add a task, Tackle puts it on the day it fits, by its project’s usual day or by matching its words to what you write here. You can always move it.</p></header>`;
+      <p class="lede">Give each day a theme, then say what kind of work belongs there. When you add a task, Tackle puts it on the day it fits, by its project’s usual day or by matching its words to what you write here. You can always move it.</p>
+      <p class="hint">Your weekly Wrap happens on ${FULL[wrapDay()]}${S.rhythm && ALLDAYS.some((x) => S.rhythm[x].key === 'wrap') ? ', your Wrap Up day' : '. Give a day the Wrap Up theme to move it'}.</p></header>`;
     h += '<div class="days rhythm">';
     for (const d of ALLDAYS) {
       const r = S.rhythm[d], th = THEMES[d], isOpen = !!open[d], off = r.key === 'off';
@@ -1076,12 +1080,12 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       if (isOpen) {
         h += `<div id="rh-${d}" class="day-body rh-body">
           <div class="field-group"><label class="eyebrow" for="rh-theme-${d}">Theme</label>
-            <button type="button" class="rh-select" id="rh-theme-${d}" data-act="rh-pick" data-val="${d}" aria-haspopup="dialog">${off ? keyIcon('off', 'Off') : keyIcon(th.key, th.name)}<span class="rh-val">${esc(r.key === 'custom' ? 'Your own theme' : label)}</span><span class="dd-chev">${ICON.chev}</span></button></div>`;
+            <button type="button" class="rh-select" id="rh-theme-${d}" data-act="rh-pick" data-val="${d}" aria-haspopup="dialog">${off ? keyIcon('off', 'Off') : keyIcon(th.key, th.name)}<span class="rh-val">${esc(r.key === 'custom' ? 'Custom' : label)}</span><span class="dd-chev">${ICON.chev}</span></button></div>`;
         if (r.key === 'custom') h += `<div class="field-group"><label class="eyebrow" for="rh-name-${d}">Theme name</label><input class="field" id="rh-name-${d}" data-rh-name="${d}" value="${esc(r.name || '')}" autocomplete="off" placeholder="Kids’ activities, Shop orders, Studio day…"></div>`;
         if (off) h += `<p class="hint">Days off stay blank: no tasks land here and there’s no nudge.${nTasks ? ` ${nTasks} ${nTasks === 1 ? 'task is' : 'tasks are'} still on ${FULL[d]}; find ${nTasks === 1 ? 'it' : 'them'} in All tasks.` : ''}</p>`;
         else h += `<div class="field-group"><label class="eyebrow" for="rh-desc-${d}">What goes on ${FULL[d]}</label>
           <textarea class="area" id="rh-desc-${d}" data-rh-desc="${d}" rows="3" placeholder="The kinds of tasks that belong here, e.g. invoices, client calls, school forms, groceries">${esc(r.desc || '')}</textarea>
-          <p class="hint">Tackle matches new tasks against these words.</p></div>`;
+          <p class="hint">Tackle matches new tasks against these words.${d === wrapDay() && r.key === 'wrap' ? ' Your weekly Wrap happens on this day.' : ''}</p></div>`;
         h += '</div>';
       }
       h += '</section>';
@@ -1216,7 +1220,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 
   function renderWrap() {
     const d = S.simDay;
-    const date = d === WRAP_DAY ? FULL[WRAP_DAY] + ' · ' + fmt(dateOf(WRAP_DAY)) : 'Preview · Wrap is for ' + FULL[WRAP_DAY] + 's';
+    const date = d === wrapDay() ? FULL[wrapDay()] + ' · ' + fmt(dateOf(wrapDay())) : 'Preview · Wrap is for ' + FULL[wrapDay()] + 's';
     const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
     if (S.closed) {
       const c = S.closed;
@@ -1530,7 +1534,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       <span class="theme-text"><strong>${esc(name)}</strong>${desc ? `<small>${esc(desc)}</small>` : ''}</span>${cur === key ? `<span class="dd-check">${ICON.tick}</span>` : ''}</button>`;
     return head(FULL[d]) + '<div class="theme-list">' + opt('off', 'Off', 'A blank day. No tasks land here, no nudge.')
       + THEME_LIB.map((x) => opt(x.key, x.name, x.desc)).join('')
-      + opt('custom', 'Your own theme', 'Name it and describe what goes on this day.') + '</div>';
+      + opt('custom', 'Custom', 'Name it yourself and describe what goes on this day.') + '</div>';
   }
 
   function confirmProjectSheet() {
