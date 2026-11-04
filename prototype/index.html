@@ -325,6 +325,19 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 a.hero-link { text-decoration: none; }
 .hero-more { display: inline-flex; align-items: center; gap: 6px; margin-top: -12px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
 .hero-more svg { width: 16px; height: 16px; }
+.donut-card { display: flex; align-items: center; gap: 22px; padding: 18px; border-radius: 16px; background: var(--surface); }
+.donut { width: 116px; height: 116px; flex-shrink: 0; }
+.donut circle { fill: none; stroke-width: 14; }
+.donut-rest { stroke: var(--card); }
+.donut-done { stroke: var(--ink); stroke-linecap: round; }
+.donut-pct { font-family: var(--display); font-size: 22px; fill: var(--ink); }
+.donut-legend { display: flex; flex-direction: column; gap: 8px; }
+.donut-legend p { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--text2); }
+.donut-legend strong { font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.donut-legend small { font-size: 12.5px; color: var(--muted); }
+.key { width: 10px; height: 10px; border-radius: 3px; }
+.key.done { background: var(--ink); }
+.key.open { background: var(--card); border: 1px solid var(--line2); }
 .stat-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .stat { display: flex; flex-direction: column; gap: 4px; padding: 14px 12px; border-radius: 14px; background: var(--surface); }
 .stat strong { font-family: var(--display); font-size: 26px; font-weight: 400; line-height: 1; }
@@ -334,7 +347,7 @@ a.hero-link { text-decoration: none; }
 .bar-row { display: grid; grid-template-columns: 24px 92px 1fr 40px; align-items: center; gap: 10px; }
 .bar-name { font-size: 14px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bar-track { position: relative; height: 12px; }
-.bar-track::before { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--all) * 100%); border: 1px solid var(--line2); border-radius: 6px; }
+.bar-track::before { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--all) * 100%); background: var(--surface); border-radius: 6px; }
 .bar-track i { position: absolute; inset: 0 auto 0 0; width: calc(var(--done) * 100%); background: var(--ink); border-radius: 6px; }
 .bar-num, .col-num { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
 .bar-num small, .col-num small { font-size: 12px; font-weight: 400; color: var(--muted); }
@@ -342,8 +355,8 @@ a.hero-link { text-decoration: none; }
 .col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .col .col-num { text-align: center; }
 .col-track { position: relative; width: 26px; height: 110px; }
-.col-track::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--all) * 100%); border: 1px solid var(--line2); border-radius: 7px; }
-.col-track i { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--done) * 100%); background: var(--ink); border-radius: 7px; }
+.col-track i { position: absolute; left: 0; right: 0; bottom: 0; height: max(calc(var(--done) * 100%), 3px); background: var(--ink); border-radius: 7px; }
+.col-track[style*="--done:0;"] i { background: var(--line2); }
 .col-day { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .col.is-today .col-day { color: var(--ink); font-weight: 600; }
 .done-day { display: flex; flex-direction: column; gap: 6px; }
@@ -1074,8 +1087,8 @@ a.proj-row { text-decoration: none; }
     let h = `<${link ? 'a href="#summary" class="hero hero-link"' : 'section class="hero"'} aria-labelledby="hero-h-${where}">
       <div class="hero-big"><strong>${done.length}</strong><span id="hero-h-${where}">${done.length === 1 ? 'Task' : 'Tasks'} completed<br>this week</span></div>`;
     if (byProject.length) h += '<ul class="tally" aria-label="By project">' + byProject.map((c) => `<li><span class="tally-ico">${picon(c.p.icon, 16)}</span><b>${c.n}</b><small>${esc(c.p.name)}</small></li>`).join('') + '</ul>';
-    const foot = where === 'week' ? `Wrap it up on ${FULL[wrapDay()]} for your ${ord(S.streak + 1)} week in a row.` : `Close this out for your ${ord(S.streak + 1)} week in a row.`;
-    return h + `<p class="hero-foot">${foot}</p>${link ? `<span class="hero-more">See summary${ICON.arrow}</span>` : ''}</${link ? 'a' : 'section'}>`;
+    const foot = where === 'week' ? `Wrap it up on ${FULL[wrapDay()]}.` : where === 'wrap' ? 'Close it out when you’re ready.' : '';
+    return h + `${foot ? `<p class="hero-foot">${foot}</p>` : ''}${link ? `<span class="hero-more">See summary${ICON.arrow}</span>` : ''}</${link ? 'a' : 'section'}>`;
   }
 
   function renderAll() {
@@ -1162,12 +1175,15 @@ a.proj-row { text-decoration: none; }
     const pct = mine.length ? Math.round((done.length / mine.length) * 100) : 0;
     const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
     let h = `<a class="wrap-back sub-back" href="#week">${ICON.back}Week</a>
-      <header class="head"><p class="eyebrow">${fmt(dateOf(WEEKDAYS[0]))} – ${fmt(dateOf(WEEKDAYS[WEEKDAYS.length - 1]))}</p><h1>Summary</h1></header>`;
+      <header class="head"><p class="eyebrow">Summary</p><h1>${fmt(dateOf(WEEKDAYS[0]))} – ${fmt(dateOf(WEEKDAYS[WEEKDAYS.length - 1]))}</h1></header>`;
     h += heroHTML('summary');
-    h += `<section class="stat-row" aria-label="This week in numbers">
-      <div class="stat"><strong>${pct}%</strong><span>of planned tasks done</span></div>
-      <div class="stat"><strong>${mine.length - done.length}</strong><span>still open</span></div>
-      <div class="stat"><strong>${S.streak}</strong><span>${S.streak === 1 ? 'week' : 'weeks'} in a row</span></div></section>`;
+    const open = mine.length - done.length, R = 42, C = 2 * Math.PI * R;
+    h += `<section class="donut-card" aria-label="${pct}% of planned tasks done, ${open} still open">
+      <svg class="donut" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="${R}" class="donut-rest"/>
+        <circle cx="50" cy="50" r="${R}" class="donut-done" stroke-dasharray="${(C * pct / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 50 50)"/>
+        <text x="50" y="50" text-anchor="middle" dominant-baseline="central" class="donut-pct">${pct}%</text></svg>
+      <div class="donut-legend"><p><span class="key done"></span><strong>${done.length}</strong> done</p><p><span class="key open"></span><strong>${open}</strong> still open</p>
+        <small>of ${mine.length} planned this week</small></div></section>`;
     // by project
     const projs = S.projects.map((p) => ({ name: p.name, d: done.filter((t) => t.tag === p.name).length, all: mine.filter((t) => t.tag === p.name).length })).filter((x) => x.all);
     const none = { name: '', d: done.filter((t) => !t.tag).length, all: mine.filter((t) => !t.tag).length };
@@ -1177,13 +1193,13 @@ a.proj-row { text-decoration: none; }
     h += '<section class="sum-block" aria-labelledby="by-proj"><h2 class="eyebrow" id="by-proj">By project</h2><div class="bars">'
       + projs.map((x) => `<div class="bar-row">${tile(x.name, true)}<span class="bar-name">${esc(x.name || 'No project')}</span>
           <span class="bar-track" style="--all:${x.all / maxP};--done:${x.all ? x.d / maxP : 0}" aria-hidden="true"><i></i></span><span class="bar-num">${x.d}<small>/${x.all}</small></span></div>`).join('')
-      + '</div><p class="hint">Filled = done, outline = planned this week.</p></section>';
-    // by day
-    const days = WEEKDAYS.map((d) => ({ d, done: done.filter((t) => t.day === d).length, all: mine.filter((t) => t.day === d).length }));
-    const maxD = Math.max(1, ...days.map((x) => x.all));
+      + '</div></section>';
+    // by day: just what got done
+    const days = WEEKDAYS.map((d) => ({ d, done: done.filter((t) => t.day === d).length }));
+    const maxD = Math.max(1, ...days.map((x) => x.done));
     h += `<section class="sum-block" aria-labelledby="by-day"><h2 class="eyebrow" id="by-day">By day</h2><div class="cols" style="--n:${days.length}">`
-      + days.map((x) => `<div class="col${x.d === S.simDay ? ' is-today' : ''}"><span class="col-num">${x.done}<small>/${x.all}</small></span>
-          <span class="col-track" style="--all:${x.all / maxD};--done:${x.done / maxD}" aria-label="${FULL[x.d]}: ${x.done} of ${x.all} done"><i></i></span>
+      + days.map((x) => `<div class="col${x.d === S.simDay ? ' is-today' : ''}"><span class="col-num">${x.done}</span>
+          <span class="col-track" style="--done:${x.done / maxD}" aria-label="${FULL[x.d]}: ${x.done} done"><i></i></span>
           ${themeIcon(x.d, 16)}<span class="col-day">${x.d}</span></div>`).join('')
       + '</div></section>';
     // list
@@ -1364,7 +1380,7 @@ a.proj-row { text-decoration: none; }
       const c = S.closed;
       return `<header class="head"><p class="eyebrow">${esc(date)}</p><h1>Week closed</h1>
         <p class="lede">You earned the weekend.</p></header>
-        <section class="hero"><div class="hero-big"><strong>${ord(S.streak)}</strong><span>Week in a row<br>closed out</span></div>
+        <section class="hero"><div class="hero-big"><strong>${c.wins}</strong><span>${c.wins === 1 ? 'Task' : 'Tasks'} done<br>this week</span></div>
         <p class="hero-foot">${c.wins} ${c.wins === 1 ? 'win' : 'wins'} banked · ${c.rolled} carried to next week${c.dropped ? ` · ${c.dropped} removed` : ''}</p></section>
         <button type="button" class="primary" data-act="dismiss-closed">See next week</button>`;
     }
