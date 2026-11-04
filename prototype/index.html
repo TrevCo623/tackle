@@ -1252,7 +1252,7 @@ a.proj-row { text-decoration: none; }
   function renderRhythm() {
     const open = S.rhythmOpen || { [WEEKDAYS[0]]: true };
     let h = `<header class="head slotted"><div class="top-slot">${backBtn('Settings', '', '#settings')}</div><h1>Weekly rhythm</h1>
-      <p class="lede">Give each day a theme, then say what kind of work belongs there. When you add a task, Tackle puts it on the day it fits, by its project’s usual day or by matching its words to what you write here. You can always move it.</p></header>`;
+      <p class="lede">Give each day a theme, then say what kind of work belongs there. We’ll use these inputs to suggest when to tackle each new task.</p></header>`;
     h += '<div class="days rhythm">';
     for (const d of ALLDAYS) {
       const r = S.rhythm[d], th = THEMES[d], isOpen = !!open[d], off = r.key === 'off';
