@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F7F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#191917" media="(prefers-color-scheme: dark)">
-<meta name="tackle-build" content="1793823677">
+<meta name="tackle-build" content="1793823959">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -757,6 +757,16 @@ a.proj-row { text-decoration: none; }
 .prompt-list li { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 16px; line-height: 1.4; }
 .prompt-list li span { font-family: var(--mono); font-size: 12px; color: var(--muted); padding-top: 3px; }
 .sheet-actions { display: flex; flex-direction: column; gap: 4px; }
+.stale-lede { margin: -4px 0 4px; font-size: 15px; }
+.stale-list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.stale-list li { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--ink); }
+.stale-list .more-n { color: var(--muted); font-size: 14px; padding-left: 34px; justify-content: flex-start; }
+.sheet-actions .ghost-btn + .text-btn { align-self: center; margin-top: 6px; }
+.stale-form { display: flex; flex-direction: column; }
+.stale-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.stale-row:first-child { border-top: 1px solid var(--line); }
+.stale-name { flex: 1; min-width: 0; font-size: 15.5px; color: var(--ink); }
+.stale-row .dd { flex-shrink: 0; }
 
 /* Toast + notification */
 .toast {
@@ -1548,6 +1558,58 @@ a.proj-row { text-decoration: none; }
   }
 
   /* ---------- Sheets ---------- */
+  // Leftovers: one-off tasks still open on a day that has already passed this week.
+  // Once a day, on a themed day, Tackle asks where they should go.
+  function staleTasks() {
+    if (!THEMES[S.simDay]) return [];
+    if (APP && S.weekOf && new Date(S.weekOf + 'T00:00:00') > thisMonday()) return [];
+    return S.tasks.filter((t) => !t.repeat && !t.next && t.status !== 'done' && WEEKDAYS.includes(t.day) && isPast(t.day));
+  }
+  function maybeAskStale() {
+    if (sheet || window.__tackleNoStale) return;
+    const key = (S.weekOf || '') + ':' + S.simDay;
+    if (S.staleAsked === key) return;
+    const list = staleTasks();
+    S.staleAsked = key; save();
+    if (list.length) openSheet({ kind: 'stale', ids: list.map((t) => t.id) });
+  }
+  // Next week starts fresh, so a project's usual day wins outright; otherwise Tackle's normal pick.
+  function nextWeekDay(t) {
+    const p = t.tag && S.projects.find((x) => x.name === t.tag);
+    return p && THEMES[p.day] ? p.day : autoDay(t.label, t.tag);
+  }
+  const staleList = () => (sheet && sheet.ids ? sheet.ids.map(byId).filter((t) => t && t.status !== 'done') : []);
+  function moveStale(t, to) {
+    if (to.startsWith('next:')) { t.day = to.slice(5); t.next = true; }
+    else { t.day = to; t.next = false; }
+    t.home = null;
+  }
+  function staleSheet() {
+    const list = staleList(), n = list.length;
+    let h = head(`${n} unfinished ${n === 1 ? 'task' : 'tasks'}`);
+    h += `<p class="lede stale-lede">Left open from earlier this week. Where should ${n === 1 ? 'it' : 'they'} go?</p>`;
+    h += '<ul class="stale-list">' + list.slice(0, 4).map((t) => `<li>${tile(t.tag, true)}<span>${esc(t.label)}</span></li>`).join('') + (n > 4 ? `<li class="more-n">and ${n - 4} more</li>` : '') + '</ul>';
+    h += `<div class="sheet-actions"><button type="button" class="primary" data-act="stale-today">Today</button>
+      <button type="button" class="ghost-btn" data-act="stale-next">Next week</button>
+      <button type="button" class="text-btn" data-act="stale-choose">Let me choose</button></div>`;
+    return h;
+  }
+  function stalePickPage() {
+    const list = staleList();
+    const opts = WEEKDAYS.filter((d) => !isPast(d)).map((d) => [d, d === S.simDay ? 'Today' : FULL[d]])
+      .concat(WEEKDAYS.map((d) => ['next:' + d, 'Next ' + FULL[d]]));
+    let h = pageHead('Back', 'stale-back', 'Unfinished tasks', '', 'stale-form');
+    h += '<form id="stale-form" novalidate class="stale-form">';
+    h += list.map((t) => {
+      const cur = (sheet.pick && sheet.pick[t.id]) || S.simDay, sel = opts.find((o) => o[0] === cur) || opts[0];
+      return `<div class="stale-row">${tile(t.tag, true)}<span class="stale-name">${esc(t.label)}</span>
+        <label class="dd"><span>${esc(sel[1])}</span><span class="caret">${ICON.chev}</span>
+        <select data-stale="${t.id}" aria-label="Day for ${esc(t.label)}">${opts.map((o) => `<option value="${o[0]}"${o[0] === sel[0] ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label></div>`;
+    }).join('');
+    h += '</form>';
+    return h;
+  }
+
   function renderSheet() {
     const root = $('#sheet');
     if (!sheet) { root.hidden = true; root.innerHTML = ''; return; }
@@ -1564,6 +1626,8 @@ a.proj-row { text-decoration: none; }
     else if (sheet.kind === 'confirm-account') body = confirmDeleteAccount();
     else if (sheet.kind === 'confirm-project') body = confirmProjectSheet();
     else if (sheet.kind === 'account') body = APP.accountSheet(head, esc);
+    else if (sheet.kind === 'stale') body = staleSheet();
+    else if (sheet.kind === 'stale-pick') body = stalePickPage();
     else body = planSheet();
     root.innerHTML = `<button type="button" class="scrim" data-act="close-sheet" aria-label="Close" tabindex="-1"></button>
       <div class="sheet${sheet.kind === 'task' || sheet.page ? ' is-page' : ''}" role="dialog" aria-modal="true" aria-labelledby="sheet-h">${sheet.kind === 'task' || sheet.page ? '' : '<span class="grab" aria-hidden="true"></span>'}${body}</div>`;
@@ -1964,6 +2028,15 @@ a.proj-row { text-decoration: none; }
       case 'd-tag': sheet.draft.tag = val; sheet.projOpen = false; if (sheet.mode === 'add' && !sheet.dayTouched) sheet.draft.day = autoDay(sheet.draft.label, val); renderSheet(); return;
       case 'proj-toggle': sheet.projOpen = !sheet.projOpen; renderSheet(); return;
       case 'd-repeat': sheet.draft.repeat = !sheet.draft.repeat; renderSheet(); return;
+      case 'stale-today': case 'stale-next': {
+        const list = staleList();
+        list.forEach((t) => moveStale(t, a === 'stale-today' ? S.simDay : 'next:' + nextWeekDay(t)));
+        save(); closeSheet(); render();
+        toast(`Moved ${list.length} ${list.length === 1 ? 'task' : 'tasks'} to ${a === 'stale-today' ? 'today' : 'next week'}`);
+        return;
+      }
+      case 'stale-choose': sheet = { kind: 'stale-pick', page: true, ids: sheet.ids, pick: {} }; renderSheet(); return;
+      case 'stale-back': sheet = { kind: 'stale', ids: sheet.ids }; renderSheet(); return;
       case 'rename': sheet.renaming = true; renderSheet(); { const i = $('#f-label'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); } return;
       case 'delete': {
         const i = S.tasks.indexOf(byId(sheet.id));
@@ -2039,6 +2112,13 @@ a.proj-row { text-decoration: none; }
   document.addEventListener('submit', (e) => {
     if (e.target.id === 'task-form') { e.preventDefault(); commitTask(); }
     if (e.target.id === 'project-form') { e.preventDefault(); commitProject(); }
+    if (e.target.id === 'stale-form') {
+      e.preventDefault();
+      const list = staleList();
+      list.forEach((t) => moveStale(t, sheet.pick[t.id] || S.simDay));
+      save(); closeSheet(); render();
+      toast(`Moved ${list.length} ${list.length === 1 ? 'task' : 'tasks'}`);
+    }
     if (e.target.id === 'account-form') {
       e.preventDefault();
       const name = ($('#acct-name').value || '').trim();
@@ -2098,6 +2178,7 @@ a.proj-row { text-decoration: none; }
   document.addEventListener('change', (e) => {
     const el = e.target;
     if (el.dataset && el.dataset.carry) { const t = byId(el.dataset.carry); if (t) { carryOf(t).day = el.value; learn(t.tag, el.value); save(); render(); } }
+    if (el.dataset && el.dataset.stale && sheet) { sheet.pick[el.dataset.stale] = el.value; renderSheet(); return; }
     if (el.dataset && el.dataset.dd) { const v = el.value, a = el.dataset.dd; if (a === 'filter') S.filters[el.dataset.scope] = v; else if (a === 'all-day') S.allDay = v; else if (a === 'sum-day') S.sumDay = v; save(); render(); }
     if (el.id === 'nudge-time') { S.nudgeTime = el.value; save(); render(); if (APP) APP.setNudgeTime(el.value); }
   });
@@ -2134,6 +2215,7 @@ a.proj-row { text-decoration: none; }
       if (tab.dataset.v === v || (v === 'rhythm' && tab.dataset.v === 'account') || (v === 'summary' && tab.dataset.v === 'week')) tab.setAttribute('aria-current', 'page'); else tab.removeAttribute('aria-current');
     });
     $('#fab').hidden = v === 'wrap' || v === 'account' || v === 'rhythm' || v === 'summary';
+    if (v === 'today' || v === 'week' || v === 'all') maybeAskStale();
   }
 
   // Tap and hold a Week or Plan card, then drag it to another day or another spot in a day.
