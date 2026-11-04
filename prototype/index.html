@@ -1582,10 +1582,6 @@ a.proj-row { text-decoration: none; }
       h += `<div class="field-group"><p class="eyebrow">Status</p>${sliderHTML(D.status)}</div>`;
     }
     h += `<div class="field-group"><label class="eyebrow" for="f-notes">Notes${isEdit ? '' : ' · optional'}</label><textarea class="area" id="f-notes" rows="4" placeholder="Links, details, what done looks like…">${esc(D.notes || '')}</textarea></div>`;
-    h += `<div class="field-group"><p class="eyebrow" id="rep-lbl">Repeats</p><div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="group" aria-labelledby="rep-lbl">
-      <button type="button" data-act="d-repeat-set" data-val="0" aria-pressed="${!D.repeat}">One-time</button>
-      <button type="button" data-act="d-repeat-set" data-val="1" aria-pressed="${!!D.repeat}">${ICON.repeatL}Recurring</button></div>
-      ${D.repeat ? `<p class="hint">Comes back every ${FULL[D.day]}.</p>` : ''}</div>`;
     // Day: the suggested-day box on both New and Edit; Change opens the full list.
     if (!sheet.dayOpen) {
       h += `<div class="field-group"><p class="eyebrow" id="lands-lbl">Scheduled for</p><p class="lands" id="lands" aria-labelledby="lands-lbl">${landsHTML(D.day)}</p></div>`;
@@ -1601,6 +1597,10 @@ a.proj-row { text-decoration: none; }
     h += '</div>';
     }
 
+    h += `<div class="field-group"><p class="eyebrow" id="rep-lbl">Repeats</p><div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="group" aria-labelledby="rep-lbl">
+      <button type="button" data-act="d-repeat-set" data-val="0" aria-pressed="${!D.repeat}">One-time</button>
+      <button type="button" data-act="d-repeat-set" data-val="1" aria-pressed="${!!D.repeat}">${ICON.repeatL}Recurring</button></div>
+      ${D.repeat ? `<p class="hint">Comes back every ${FULL[D.day]}.</p>` : ''}</div>`;
     if (isEdit) {
       if (D.dep) {
         h += `<div class="hold-card" role="status"><span class="hold-ico">${ICON.link}</span>
