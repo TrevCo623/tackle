@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F7F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#191917" media="(prefers-color-scheme: dark)">
-<meta name="tackle-build" content="1793822843">
+<meta name="tackle-build" content="1793823248">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -542,6 +542,8 @@ a.hero-link { text-decoration: none; }
 .save-pill { position: absolute; top: 0; right: 0; height: 40px; padding: 0 20px; border: 0; border-radius: 20px;
   background: var(--ink); color: var(--on-ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
 .task-top { margin: 20px 0 0; }
+/* Back button and a label in the same slot: give the label the usual room below the buttons. */
+.top-slot:has(.wrap-back):has(.eyebrow) { height: 100px; }
 .head.slotted > h1 ~ * { margin-top: 12px; }
 .head.slotted .lede { max-width: none; }
 .all-count { margin: 0 0 -14px; }
@@ -2217,6 +2219,22 @@ a.proj-row { text-decoration: none; }
   document.addEventListener('pointerup', () => release(true));
   document.addEventListener('pointercancel', () => release(false));
   document.addEventListener('contextmenu', (e) => { if (e.target.closest && e.target.closest('.wcard[data-drag]')) e.preventDefault(); });
+
+  // Swipe right to go back: a mostly horizontal left-to-right swipe presses the page's back button,
+  // if it has one. Ignored on sliders, text fields and while dragging a task.
+  let swipe = null;
+  document.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    swipe = (e.touches.length === 1 && !(e.target.closest && e.target.closest('.slider, input, textarea, select'))) ? { x: t.clientX, y: t.clientY, at: Date.now() } : null;
+  }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    if (!swipe || drag) { swipe = null; return; }
+    const t = e.changedTouches[0], dx = t.clientX - swipe.x, dy = Math.abs(t.clientY - swipe.y), fast = Date.now() - swipe.at < 700;
+    swipe = null;
+    if (dx < 80 || dy > dx * 0.5 || !fast) return;
+    const back = sheet ? document.querySelector('.sheet .wrap-back') : document.querySelector('#app .wrap-back');
+    if (back) back.click();
+  }, { passive: true });
   document.addEventListener('click', (e) => { if (swallowClick) { swallowClick = false; e.stopPropagation(); e.preventDefault(); } }, true);
 
   if (APP) {
