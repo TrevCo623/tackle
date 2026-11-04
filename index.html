@@ -1177,7 +1177,7 @@ a.proj-row { text-decoration: none; }
     let h = `<a class="proj-row rhythm-row" href="#rhythm"><span class="proj-text"><strong>Weekly rhythm</strong>
         <span class="rhythm-mini">${ALLDAYS.map((x) => `<span class="rm-row${THEMES[x] ? '' : ' is-free'}"><span class="rm-day">${x}</span>${themeIcon(x, 16)}<span class="rm-name">${esc(THEMES[x] ? THEMES[x].short : 'Free')}</span></span>`).join('')}</span></span><span class="chev">${ICON.chev}</span></a>`;
     h += row('projects', 'Projects', `${S.projects.length} ${S.projects.length === 1 ? 'project' : 'projects'}`);
-    h += row('notif-page', 'Notifications', nudgeOn ? `Daily nudge on · ${timeLabel(S.nudgeTime || '08:30')}` : 'Daily nudge off');
+    h += row('notif-page', 'Notifications', nudgeOn ? `Daily nudge at ${timeLabel(S.nudgeTime || '08:30')}` : 'Daily nudge off');
     h += row('account-page', 'Account', esc(u.name || u.email || 'Signed in'));
     h += real ? '<button type="button" class="ghost-btn" data-act="sign-out">Sign out</button>' : '<button type="button" class="ghost-btn" disabled>Sign out</button>';
     return slotHead('Settings') + '<div class="acct-page settings-list">' + h + '</div>';
