@@ -1407,7 +1407,7 @@ a.proj-row { text-decoration: none; }
     if (m) return m;
     return WEEKDAYS.find((d) => THEMES[d].key === 'plan') || WEEKDAYS[0];
   }
-  const landsHTML = (day) => `${themeIcon(day)}<span>Lands on <strong>${FULL[day]}</strong>${isPast(day) ? ', next week' : ` · ${esc(THEMES[day].name)}`}</span><button type="button" class="text-btn" data-act="day-open">Change</button>`;
+  const landsHTML = (day, isEdit) => `${themeIcon(day)}<span>${isEdit ? 'On' : 'Lands on'} <strong>${FULL[day]}</strong>${isPast(day) ? ', next week' : ` · ${esc(THEMES[day].name)}`}</span><button type="button" class="text-btn" data-act="day-open">Change</button>`;
 
   function learn(tag, day) {
     const p = tag && S.projects.find((x) => x.name === tag);
@@ -1581,19 +1581,6 @@ a.proj-row { text-decoration: none; }
     if (isEdit) {
       h += `<div class="field-group"><p class="eyebrow">Status</p>${sliderHTML(D.status)}</div>`;
     }
-    if (!isEdit && !sheet.dayOpen) {
-      h += `<p class="lands" id="lands">${landsHTML(D.day)}</p>`;
-    } else {
-    h += '<div class="field-group"><p class="eyebrow" id="day-lbl">Day</p><div class="day-list" role="radiogroup" aria-labelledby="day-lbl">' + WEEKDAYS.map((d) => {
-      const on = D.day === d;
-      return `<div class="day-opt${on ? ' is-on' : ''}">
-        <button type="button" role="radio" aria-checked="${on}" class="day-pick-btn" data-act="d-day" data-val="${d}"><strong>${FULL[d]}</strong><span>${esc(THEMES[d].name)}${isPast(d) && !(isEdit && d === byId(sheet.id).day && !byId(sheet.id).next) ? ' · next week' : ''}</span></button>
-      </div>`;
-    }).join('') + '</div>';
-    if (isEdit && D.repeat && sheet.origDay !== D.day) h += `<p class="hint">Moves it to ${FULL[D.day]}s in your weekly plan.</p>`;
-    h += '</div>';
-    }
-
     h += `<div class="field-group"><label class="eyebrow" for="f-notes">Notes${isEdit ? '' : ' · optional'}</label><textarea class="area" id="f-notes" rows="4" placeholder="Links, details, what done looks like…">${esc(D.notes || '')}</textarea></div>`;
     h += `<div class="field-group"><p class="eyebrow" id="rep-lbl">Repeats</p><div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="group" aria-labelledby="rep-lbl">
       <button type="button" data-act="d-repeat-set" data-val="0" aria-pressed="${!D.repeat}">One-time</button>
@@ -1611,6 +1598,21 @@ a.proj-row { text-decoration: none; }
           <p class="hint">Saving puts it on hold.</p></div>`;
       } else h += '<button type="button" class="text-btn hold-link" data-act="d-hold-open">Put on hold for dependency</button>';
     }
+    // Day: the suggested-day box on both New and Edit; Change opens the full list.
+    if (!sheet.dayOpen) {
+      h += `<p class="lands" id="lands">${landsHTML(D.day, isEdit)}</p>`;
+      if (isEdit && D.repeat && sheet.origDay !== D.day) h += `<p class="hint">Moves it to ${FULL[D.day]}s in your weekly plan.</p>`;
+    } else {
+    h += '<div class="field-group"><p class="eyebrow" id="day-lbl">Day</p><div class="day-list" role="radiogroup" aria-labelledby="day-lbl">' + WEEKDAYS.map((d) => {
+      const on = D.day === d;
+      return `<div class="day-opt${on ? ' is-on' : ''}">
+        <button type="button" role="radio" aria-checked="${on}" class="day-pick-btn" data-act="d-day" data-val="${d}"><strong>${FULL[d]}</strong><span>${esc(THEMES[d].name)}${isPast(d) && !(isEdit && d === byId(sheet.id).day && !byId(sheet.id).next) ? ' · next week' : ''}</span></button>
+      </div>`;
+    }).join('') + '</div>';
+    if (isEdit && D.repeat && sheet.origDay !== D.day) h += `<p class="hint">Moves it to ${FULL[D.day]}s in your weekly plan.</p>`;
+    h += '</div>';
+    }
+
     h += `<div class="sheet-actions"><button type="submit" class="primary">Save</button></div></form>`;
     return h;
   }
@@ -1945,7 +1947,7 @@ a.proj-row { text-decoration: none; }
       case 'd-hold-open': sheet.holdOpen = true; renderSheet(); $('#f-dep').focus(); return;
       case 'd-hold-cancel': sheet.holdOpen = false; sheet.depDraft = ''; renderSheet(); return;
       case 'd-hold-remove': sheet.draft.dep = ''; renderSheet(); return;
-      case 'd-day': sheet.draft.day = val; sheet.dayTouched = true; renderSheet(); return;
+      case 'd-day': sheet.draft.day = val; sheet.dayTouched = true; sheet.dayOpen = false; renderSheet(); return;
       case 'd-tag': sheet.draft.tag = val; sheet.projOpen = false; if (sheet.mode === 'add' && !sheet.dayTouched) sheet.draft.day = autoDay(sheet.draft.label, val); renderSheet(); return;
       case 'proj-toggle': sheet.projOpen = !sheet.projOpen; renderSheet(); return;
       case 'd-repeat': sheet.draft.repeat = !sheet.draft.repeat; renderSheet(); return;
