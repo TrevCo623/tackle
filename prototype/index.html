@@ -520,6 +520,10 @@ a.hero-link { text-decoration: none; }
 .lands > span:not(.ticon) { flex: 1; min-width: 0; text-align: left; }
 .lands strong { color: var(--ink); font-weight: 600; }
 .lands .text-btn { min-height: 32px; align-self: center; }
+.repeat-tog { flex-shrink: 0; width: 36px; height: 36px; margin: -6px -6px -6px 0; border: 0; border-radius: 50%; background: transparent; color: var(--muted);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color .15s, color .15s; }
+.repeat-tog[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.repeat-tog svg { width: 18px; height: 18px; }
 .proj-list { display: flex; flex-direction: column; border-top: 1px solid var(--line); margin-bottom: 14px; }
 .proj-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 8px 2px; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; color: var(--ink); }
 .proj-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -1413,7 +1417,8 @@ a.proj-row { text-decoration: none; }
     if (m) return m;
     return WEEKDAYS.find((d) => THEMES[d].key === 'plan') || WEEKDAYS[0];
   }
-  const landsHTML = (day) => `${themeIcon(day)}<span><strong>${FULL[day]}</strong>${isPast(day) ? ', next week' : ` · ${esc(THEMES[day].name)}`}</span><button type="button" class="text-btn" data-act="day-open">Change</button>`;
+  // The scheduled-day box: day and theme on the left, the repeat toggle on the right.
+  const landsHTML = (day, repeat) => `${themeIcon(day)}<span><strong>${repeat ? 'Every ' : ''}${FULL[day]}</strong>${isPast(day) && !repeat ? ', next week' : ` · ${esc(THEMES[day].name)}`}</span><button type="button" class="repeat-tog" data-act="d-repeat" aria-pressed="${!!repeat}" aria-label="Repeat every week">${ICON.repeatL}</button>`;
 
   function learn(tag, day) {
     const p = tag && S.projects.find((x) => x.name === tag);
@@ -1587,7 +1592,7 @@ a.proj-row { text-decoration: none; }
     h += `<div class="field-group"><label class="eyebrow" for="f-notes">Notes${isEdit ? '' : ' · optional'}</label><textarea class="area" id="f-notes" rows="4" placeholder="Links, details, what done looks like…">${esc(D.notes || '')}</textarea></div>`;
     // Day: the suggested-day box on both New and Edit; Change opens the full list.
     if (!sheet.dayOpen) {
-      h += `<div class="field-group"><p class="eyebrow" id="lands-lbl">Scheduled for</p><p class="lands" id="lands" aria-labelledby="lands-lbl">${landsHTML(D.day)}</p></div>`;
+      h += `<div class="field-group"><p class="eyebrow" id="lands-lbl">Scheduled for</p><p class="lands" id="lands" aria-labelledby="lands-lbl">${landsHTML(D.day, D.repeat)}</p><button type="button" class="text-btn rename" data-act="day-open">Change day</button></div>`;
       if (isEdit && D.repeat && sheet.origDay !== D.day) h += `<p class="hint">Moves it to ${FULL[D.day]}s in your weekly plan.</p>`;
     } else {
     h += '<div class="field-group"><p class="eyebrow" id="day-lbl">Day</p><div class="day-list" role="radiogroup" aria-labelledby="day-lbl">' + WEEKDAYS.map((d) => {
@@ -1600,10 +1605,6 @@ a.proj-row { text-decoration: none; }
     h += '</div>';
     }
 
-    h += `<div class="field-group"><p class="eyebrow" id="rep-lbl">Repeats</p><div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="group" aria-labelledby="rep-lbl">
-      <button type="button" data-act="d-repeat-set" data-val="0" aria-pressed="${!D.repeat}">One-time</button>
-      <button type="button" data-act="d-repeat-set" data-val="1" aria-pressed="${!!D.repeat}">${ICON.repeatL}Recurring</button></div>
-      ${D.repeat ? `<p class="hint">Comes back every ${FULL[D.day]}.</p>` : ''}</div>`;
     if (isEdit) {
       if (D.dep) {
         h += `<div class="hold-card" role="status"><span class="hold-ico">${ICON.link}</span>
@@ -2075,7 +2076,7 @@ a.proj-row { text-decoration: none; }
       sheet.draft.label = el.value;
       if (sheet.mode === 'add' && !sheet.dayTouched) {
         const nd = autoDay(el.value, sheet.draft.tag);
-        if (nd !== sheet.draft.day) { sheet.draft.day = nd; const l = $('#lands'); if (l) l.innerHTML = landsHTML(nd); }
+        if (nd !== sheet.draft.day) { sheet.draft.day = nd; const l = $('#lands'); if (l) l.innerHTML = landsHTML(nd, sheet.draft.repeat); }
       }
     }
     else if (el.id === 'f-dep' && sheet) { sheet.depDraft = el.value; }
