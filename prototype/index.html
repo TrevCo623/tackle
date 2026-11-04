@@ -2067,8 +2067,19 @@ a.proj-row { text-decoration: none; }
   window.addEventListener('hashchange', () => { render(); window.scrollTo({ top: 0 }); });
 
   let lastView = null, lastSimDay = null;
+  // A filter can point at something that no longer exists (a renamed project, a day that went Free,
+  // a value saved by an older version). The dropdown would show "All" while the list stays empty,
+  // so anything that isn't a current option falls back to All.
+  function cleanFilters() {
+    S.filters = Object.assign({ today: 'All', week: 'All', all: 'All', sum: 'All' }, S.filters || {});
+    const used = S.projects.filter((p) => S.tasks.some((t) => t.tag === p.name)).map((p) => p.name);
+    for (const k of Object.keys(S.filters)) if (S.filters[k] !== 'All' && !used.includes(S.filters[k])) S.filters[k] = 'All';
+    if (S.allDay !== 'All' && S.allDay !== 'Next' && !WEEKDAYS.includes(S.allDay)) S.allDay = 'All';
+    if (S.sumDay !== 'All' && !WEEKDAYS.includes(S.sumDay)) S.sumDay = 'All';
+  }
   function render() {
     const v = view();
+    cleanFilters();
     if (APP) {
       $('#proto').hidden = true;
       if (APP.gate) { const g = APP.gate(); if (g) { $('#app').innerHTML = g; document.body.classList.add('is-gated'); return; } }
