@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F7F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#191917" media="(prefers-color-scheme: dark)">
-<meta name="tackle-build" content="1793822380">
+<meta name="tackle-build" content="1793822553">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -1585,9 +1585,6 @@ a.proj-row { text-decoration: none; }
           <button type="button" class="dd-opt dd-new" data-act="new-project"><span class="ptile sm dashed"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span>New project</span></button>
           <button type="button" class="dd-opt dd-manage" data-act="projects"><span class="ptile sm dashed">${ICON.edit}</span><span>Manage projects</span></button></div>` : ''}
       </div></div>`;
-    if (isEdit) {
-      h += `<div class="field-group"><p class="eyebrow">Status</p>${sliderHTML(D.status)}</div>`;
-    }
     h += `<div class="field-group"><label class="eyebrow" for="f-notes">Notes${isEdit ? '' : ' · optional'}</label><textarea class="area" id="f-notes" rows="4" placeholder="Links, details, what done looks like…">${esc(D.notes || '')}</textarea></div>`;
     // Day: the suggested-day box on both New and Edit; Change opens the full list.
     if (!sheet.dayOpen) {
