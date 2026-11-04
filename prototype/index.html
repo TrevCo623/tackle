@@ -1281,9 +1281,26 @@ a.proj-row { text-decoration: none; }
     return h + '</div>';
   }
 
+  // Week headline follows the week: a send-off on day one, a nudge if nothing has started,
+  // encouragement as things move, and a thank-you on the last day.
+  function weekTitle() {
+    const mine = S.tasks.filter((t) => thisWeek(t) && WEEKDAYS.includes(t.day));
+    const done = mine.filter((t) => t.status === 'done').length;
+    const moving = mine.filter((t) => t.status === 'doing').length + done;
+    const pct = mine.length ? done / mine.length : 0;
+    const d = S.simDay, first = WEEKDAYS[0], last = WEEKDAYS[WEEKDAYS.length - 1];
+    if (d === last || !WEEKDAYS.includes(d) && ALLDAYS.indexOf(d) > ALLDAYS.indexOf(last)) return 'You did great';
+    if (d === first) return 'Have a great week';
+    if (mine.length && done === mine.length) return 'All done!';
+    if (pct >= 0.75) return 'Almost done!';
+    if (pct >= 0.5) return 'You’re on a roll!';
+    if (moving) return 'Making progress';
+    return 'Start with one thing';
+  }
+
   function renderWeek() {
     const f = S.filters.week;
-    let h = `<header class="head slotted"><div class="top-slot"><p class="eyebrow">${FULL[WEEKDAYS[0]]} ${fmt(dateOf(WEEKDAYS[0]))} – ${FULL[WEEKDAYS[WEEKDAYS.length - 1]]} ${fmt(dateOf(WEEKDAYS[WEEKDAYS.length - 1]))}</p></div><h1>This week</h1></header>`;
+    let h = `<header class="head slotted"><div class="top-slot"><p class="eyebrow">${FULL[WEEKDAYS[0]]} ${fmt(dateOf(WEEKDAYS[0]))} – ${FULL[WEEKDAYS[WEEKDAYS.length - 1]]} ${fmt(dateOf(WEEKDAYS[WEEKDAYS.length - 1]))}</p></div><h1>${esc(weekTitle())}</h1></header>`;
     h += heroHTML('week');
     const allOpen = WEEKDAYS.every(dayOpen);
     h += `<div class="week-tools">${projDD('week')}<button type="button" class="text-btn" data-act="toggle-all">${allOpen ? 'Collapse all' : 'Expand all'}</button></div>`;
