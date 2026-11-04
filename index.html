@@ -531,8 +531,15 @@ a.hero-link { text-decoration: none; }
 .proj-row .chev { display: inline-flex; color: var(--muted); }
 .acct-page { display: flex; flex-direction: column; gap: 0; }
 .acct-page > .ghost-btn { margin-top: 26px; }
-.page-head { display: flex; flex-direction: column; gap: 26px; padding-top: 12px; margin-bottom: 14px; }
-.page-head .sub-back { margin: 0; }
+.page-head { padding-top: 20px; margin-bottom: 26px; }
+/* Fixed headline position: a 72px slot above the headline holds the back button (or nothing),
+   so headlines on All tasks, Settings and every sub-page sit in the same place. */
+.head.slotted { gap: 0; }
+.top-slot { position: relative; height: 72px; flex-shrink: 0; }
+.top-slot .wrap-back { position: absolute; top: 0; left: 0; bottom: auto; margin: 0; }
+.top-slot .eyebrow { position: absolute; left: 0; bottom: 10px; margin: 0; }
+.head.slotted > h1 ~ * { margin-top: 12px; }
+.all-count { margin: 0 0 -14px; }
 .sheet.is-page .proj-list { margin-top: 4px; }
 .acct-form { display: flex; flex-direction: column; gap: 20px; }
 .static-field { margin: 0; font-size: 16px; color: var(--ink); padding: 2px 0; }
@@ -999,7 +1006,8 @@ a.proj-row { text-decoration: none; }
   S.filters = Object.assign({ today: 'All', week: 'All', all: 'All', sum: 'All' }, S.filters || {}); S.allDay = S.allDay || 'All';
   applyRhythm();
   S.projects.forEach((p) => { if (p.day === undefined) p.day = LEGACY_HOME[p.name] || null; });
-  if (APP) { S.simDay = realDay(); rollWeek(); }
+  if (APP) { S.simDay = realDay(); rollWeek(); } else S.simDay = realDay();
+  window.__tackleSimDay = (d) => { S.simDay = d; S.showDone = false; S.weekOpen = {}; save(); render(); }; // test hook
   let sheet = null;      // { kind: 'task'|'move'|'plan', ... }
   let lastDeleted = null;
   let resetArmed = false;
@@ -1023,6 +1031,11 @@ a.proj-row { text-decoration: none; }
   function dayDD(act, cur, next) {
     return dd(act, '', cur, [['All', 'Every day']].concat(WEEKDAYS.map((x) => [x, FULL[x]]), next ? [['Next', 'Next week']] : []), 'Filter by day');
   }
+  const backBtn = (label, act, href) => href
+    ? `<a class="wrap-back" href="${href}" aria-label="Back to ${label}">${ICON.back}${label}</a>`
+    : `<button type="button" class="wrap-back" data-act="${act}" aria-label="Back to ${label}">${ICON.back}${label}</button>`;
+  const slotHead = (title, back, eyebrow, extra, id) => `<header class="head slotted"><div class="top-slot">${back || ''}${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ''}</div><h1${id ? ` id="${id}"` : ''}>${esc(title)}</h1>${extra || ''}</header>`;
+  const pageHead = (backLabel, backAct, title, eyebrow) => '<div class="page-head">' + slotHead(title, backBtn(backLabel, backAct), eyebrow, '', 'sheet-h') + '</div>';
   function chips(scope) { return '<div class="dd-row">' + projDD(scope) + '</div>'; }
 
   const projGlyph = (name) => !name ? '' : `<span class="pglyph" role="img" aria-label="Project: ${esc(name)}" title="${esc(name)}">${picon(projectOf(name).icon, 13)}</span>`;
@@ -1135,8 +1148,9 @@ a.proj-row { text-decoration: none; }
     const list = S.tasks.filter((t) => (f === 'All' || t.tag === f) && dayOk(t) && (S.allDone || t.status !== 'done'))
       .sort((a, b) => key(a) - key(b) || ord[a.status] - ord[b.status]);
     const doneN = S.tasks.filter((t) => (f === 'All' || t.tag === f) && dayOk(t) && t.status === 'done').length;
-    let h = `<header class="head"><p class="eyebrow">${list.length} ${list.length === 1 ? 'task' : 'tasks'}</p><h1>All tasks</h1></header>`;
+    let h = slotHead('All tasks');
     h += '<div class="dd-row">' + dayDD('all-day', d, true) + projDD('all') + '</div>';
+    h += `<p class="eyebrow all-count">${list.length} ${list.length === 1 ? 'task' : 'tasks'}</p>`;
     if (!list.length) h += `<p class="quiet-note">${S.tasks.length ? 'Nothing matches these filters.' : 'No tasks yet. Tap + to add one.'}</p>`;
     // Same rows as Today, one list; the Day filter does the grouping.
     if (list.length) h += '<section class="section" aria-label="Tasks">' + list.map((t) => row(t, '', 'all')).join('') + '</section>';
@@ -1165,7 +1179,7 @@ a.proj-row { text-decoration: none; }
     h += row('notif-page', 'Notifications', nudgeOn ? `Daily nudge on · ${timeLabel(S.nudgeTime || '08:30')}` : 'Daily nudge off');
     h += row('account-page', 'Account', esc(u.name || u.email || 'Signed in'));
     h += real ? '<button type="button" class="ghost-btn" data-act="sign-out">Sign out</button>' : '<button type="button" class="ghost-btn" disabled>Sign out</button>';
-    return '<header class="head"><h1>Settings</h1></header><div class="acct-page settings-list">' + h + '</div>';
+    return slotHead('Settings') + '<div class="acct-page settings-list">' + h + '</div>';
   }
 
   function notifPage() {
@@ -1199,15 +1213,14 @@ a.proj-row { text-decoration: none; }
     const done = mine.filter((t) => t.status === 'done');
     const pct = mine.length ? Math.round((done.length / mine.length) * 100) : 0;
     const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
-    let h = `<a class="wrap-back sub-back" href="#week" aria-label="Back to Week">${ICON.back}Week</a>
-      <header class="head"><p class="eyebrow">Progress</p><h1>${fmt(dateOf(WEEKDAYS[0]))} – ${fmt(dateOf(WEEKDAYS[WEEKDAYS.length - 1]))}</h1></header>`;
+    let h = slotHead('Your progress', backBtn('Week', '', '#week'));
     h += heroHTML('summary');
     const open = mine.length - done.length, R = 45, C = 2 * Math.PI * R;
-    h += `<section class="donut-card" aria-label="${pct}% of planned tasks done, ${open} still open">
+    h += `<section class="donut-card" aria-label="${pct}% of planned tasks done, ${open} open">
       <svg class="donut" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="${R}" class="donut-rest"/>
         <circle cx="50" cy="50" r="${R}" class="donut-done" stroke-dasharray="${(C * pct / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 50 50)"/>
         <text x="50" y="50" text-anchor="middle" dominant-baseline="central" class="donut-pct">${pct}%</text></svg>
-      <div class="donut-legend"><p><span class="key done"></span><strong>${done.length}</strong> done</p><p><span class="key open"></span><strong>${open}</strong> still open</p>
+      <div class="donut-legend"><p><span class="key done"></span><strong>${done.length}</strong> done</p><p><span class="key open"></span><strong>${open}</strong> open ${open === 1 ? 'task' : 'tasks'}</p>
         <small>of ${mine.length} planned this week</small></div></section>`;
     // by project
     const projs = S.projects.map((p) => ({ name: p.name, d: done.filter((t) => t.tag === p.name).length, all: mine.filter((t) => t.tag === p.name).length })).filter((x) => x.all);
@@ -1244,8 +1257,7 @@ a.proj-row { text-decoration: none; }
 
   function renderRhythm() {
     const open = S.rhythmOpen || { [WEEKDAYS[0]]: true };
-    let h = `<a class="wrap-back sub-back" href="#settings" aria-label="Back to Settings">${ICON.back}Settings</a>
-      <header class="head"><p class="eyebrow">Your week</p><h1>Weekly rhythm</h1>
+    let h = `<header class="head slotted"><div class="top-slot">${backBtn('Settings', '', '#settings')}</div><h1>Weekly rhythm</h1>
       <p class="lede">Give each day a theme, then say what kind of work belongs there. When you add a task, Tackle puts it on the day it fits, by its project’s usual day or by matching its words to what you write here. You can always move it.</p>
       <p class="hint">Your weekly Wrap happens on ${FULL[wrapDay()]}${S.rhythm && ALLDAYS.some((x) => S.rhythm[x].key === 'wrap') ? ', your Wrap Up day' : '. Give a day the Wrap Up theme to move it'}.</p></header>`;
     h += '<div class="days rhythm">';
@@ -1294,7 +1306,7 @@ a.proj-row { text-decoration: none; }
       const parts = [];
       if (!tasks.length) parts.push('Nothing planned');
       else {
-        parts.push(openT.length ? `${openT.length} open` : 'All done');
+        parts.push(openT.length ? `${openT.length} open ${openT.length === 1 ? 'task' : 'tasks'}` : 'All done');
         if (waiting) parts.push(`${waiting} waiting`);
         if (doneN && openT.length) parts.push(`${doneN} done`);
       }
@@ -1696,7 +1708,7 @@ a.proj-row { text-decoration: none; }
   }
 
   // Full-page header for screens opened from Settings: a back link, then the big title.
-  const pageHead = (backLabel, backAct, title, eyebrow) => `<div class="page-head"><button type="button" class="wrap-back sub-back" data-act="${backAct}" aria-label="Back to ${backLabel}">${ICON.back}${backLabel}</button>
+  const pageHeadOld = (backLabel, backAct, title, eyebrow) => `<div class="page-head"><button type="button" class="wrap-back sub-back" data-act="${backAct}" aria-label="Back to ${backLabel}">${ICON.back}${backLabel}</button>
     <header class="head">${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ''}<h1 id="sheet-h">${esc(title)}</h1></header></div>`;
 
   function projectsSheet() {
@@ -2067,7 +2079,7 @@ a.proj-row { text-decoration: none; }
       $('#proto').hidden = true;
       if (APP.gate) { const g = APP.gate(); if (g) { $('#app').innerHTML = g; document.body.classList.add('is-gated'); return; } }
       document.body.classList.remove('is-gated');
-    } else $('#proto').innerHTML = renderProto();
+    } else $('#proto').hidden = true;
     $('#app').innerHTML = v === 'today' ? renderToday() : v === 'week' ? renderWeek() : v === 'all' ? renderAll() : v === 'account' ? renderAccount() : v === 'rhythm' ? renderRhythm() : v === 'summary' ? renderSummary() : renderWrap();
     $('#app').classList.toggle('is-wrap', v === 'wrap');
     lastView = v; lastSimDay = S.simDay;
