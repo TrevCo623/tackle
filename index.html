@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F7F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#191917" media="(prefers-color-scheme: dark)">
-<meta name="tackle-build" content="1793823477">
+<meta name="tackle-build" content="1793823677">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -644,7 +644,9 @@ a.proj-row { text-decoration: none; }
 .page-top { display: flex; justify-content: flex-end; min-height: 44px; }
 .task-page { gap: 30px !important; padding-bottom: 12px; }
 .task-head { display: flex; flex-direction: column; gap: 10px; }
-.task-title { font-size: 32px; line-height: 1.02; overflow-wrap: anywhere; }
+.task-title { font-size: 32px; line-height: 1.02; overflow-wrap: anywhere; cursor: text; }
+/* The day box and task title open their editors too; the text links stay for clarity. */
+.lands[data-act] { cursor: pointer; }
 .rename { align-self: flex-start; min-height: 28px; font-size: 12px; margin-top: -4px; }
 .seg button svg { width: 15px; height: 15px; margin-right: 6px; vertical-align: -2px; }
 .title-input {
@@ -1582,7 +1584,7 @@ a.proj-row { text-decoration: none; }
     if (naming) {
       h += `<label class="sr-only" for="f-label">Task name</label><textarea class="title-input" id="f-label" rows="2" autocomplete="off" placeholder="What needs doing?">${esc(D.label)}</textarea>`;
     } else {
-      h += `<h1 class="task-title">${esc(D.label)}</h1><button type="button" class="text-btn rename" data-act="rename">Change task name</button>`;
+      h += `<h1 class="task-title" data-act="rename">${esc(D.label)}</h1><button type="button" class="text-btn rename" data-act="rename">Change task name</button>`;
     }
     if (sheet.error) h += `<p class="error">${sheet.error}</p>`;
     h += '</header>';
@@ -1599,7 +1601,7 @@ a.proj-row { text-decoration: none; }
     h += `<div class="field-group"><label class="eyebrow" for="f-notes">Notes${isEdit ? '' : ' · optional'}</label><textarea class="area" id="f-notes" rows="4" placeholder="Links, details, what done looks like…">${esc(D.notes || '')}</textarea></div>`;
     // Day: the suggested-day box on both New and Edit; Change opens the full list.
     if (!sheet.dayOpen) {
-      h += `<div class="field-group"><p class="eyebrow" id="lands-lbl">Scheduled for</p><p class="lands" id="lands" aria-labelledby="lands-lbl">${landsHTML(D.day, D.repeat)}</p><button type="button" class="text-btn rename" data-act="day-open">Change day</button></div>`;
+      h += `<div class="field-group"><p class="eyebrow" id="lands-lbl">Scheduled for</p><p class="lands" id="lands" data-act="day-open" aria-labelledby="lands-lbl">${landsHTML(D.day, D.repeat)}</p><button type="button" class="text-btn rename" data-act="day-open">Change day</button></div>`;
       if (isEdit && D.repeat && sheet.origDay !== D.day) h += `<p class="hint">Moves it to ${FULL[D.day]}s in your weekly plan.</p>`;
     } else {
     h += '<div class="field-group"><p class="eyebrow" id="day-lbl">Day</p><div class="day-list" role="radiogroup" aria-labelledby="day-lbl">' + WEEKDAYS.map((d) => {
