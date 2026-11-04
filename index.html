@@ -1025,9 +1025,13 @@ a.proj-row { text-decoration: none; }
   const projGlyph = (name) => !name ? '' : `<span class="pglyph" role="img" aria-label="Project: ${esc(name)}" title="${esc(name)}">${picon(projectOf(name).icon, 13)}</span>`;
   const moreBtn = (t) => `<button type="button" class="more" data-act="menu" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button>`;
 
-  function row(t, cls) {
+  // full: All tasks spells out the project name and the status.
+  function row(t, cls, full) {
     const meta = [projGlyph(t.tag)];
-    if (t.dep) meta.push('<span>Waiting on: <b>' + esc(t.dep) + '</b></span>');
+    if (full && t.tag) meta.push('<span>' + esc(t.tag) + '</span>');
+    if (full && t.status === 'todo' && !t.dep) meta.push('<span>To do</span>');
+    if (full && t.status === 'done') meta.push('<span>Done</span>');
+    if (t.dep && t.status !== 'done') meta.push(full ? `<span title="Waiting on ${esc(t.dep)}">Waiting</span>` : '<span>Waiting on: <b>' + esc(t.dep) + '</b></span>');
     if (t.status === 'doing') meta.push('<span class="flag">In progress</span>');
     if (t.repeat && !t.home) meta.push('<span>Every week</span>');
     if (t.home) meta.push('<span>Moved here · usually ' + t.home + '</span>');
@@ -1132,7 +1136,7 @@ a.proj-row { text-decoration: none; }
     // Same rows as Today, grouped under a day eyebrow.
     const groups = [];
     for (const t of list) { const g = (t.next ? 'Next ' : '') + FULL[t.day]; if (!groups.length || groups[groups.length - 1].g !== g) groups.push({ g, items: [] }); groups[groups.length - 1].items.push(t); }
-    h += groups.map((x, i) => `<section class="section" aria-labelledby="all-g${i}"><h2 class="eyebrow" id="all-g${i}">${x.g}</h2>${x.items.map((t) => row(t)).join('')}</section>`).join('');
+    h += groups.map((x, i) => `<section class="section" aria-labelledby="all-g${i}"><h2 class="eyebrow" id="all-g${i}">${x.g}</h2>${x.items.map((t) => row(t, '', true)).join('')}</section>`).join('');
     if (doneN) h += `<button type="button" class="text-btn" data-act="all-done">${S.allDone ? 'Hide' : 'Show'} ${doneN} done</button>`;
     return h;
   }
