@@ -1,5 +1,5 @@
 /* Tackle service worker: offline shell + daily nudge. Bump VERSION to refresh the cache. */
-const VERSION = 'tackle-v31';
+const VERSION = 'tackle-v32';
 const SHELL = ['./', './index.html', './app.js', './config.js', './vendor/supabase.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

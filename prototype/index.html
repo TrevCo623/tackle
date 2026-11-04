@@ -229,6 +229,9 @@ label.dd.is-set { background: var(--ink); color: var(--on-ink); }
   background: var(--surface); border: 1.5px solid transparent;
 }
 .day.is-today { border-color: var(--ink); }
+/* Days already behind us: still readable, no longer asking for attention. */
+.day.is-past { background: color-mix(in srgb, var(--surface) 55%, transparent); }
+.day.is-past > * { opacity: .5; }
 .day.off-col { padding: 2px 4px; background: transparent; border: 0; }
 .day-toggle {
   display: flex; flex-direction: column; gap: 8px; width: 100%; min-height: 44px; padding: 0; border: 0;
@@ -1290,7 +1293,7 @@ a.proj-row { text-decoration: none; }
       }
       const projs = [...new Set(openT.map((t) => t.tag))];
       const icons = projs.slice(0, 5).map((g) => tile(g, true)).join('') + (projs.length > 5 ? `<span class="more-n">+${projs.length - 5}</span>` : '');
-      h += `<section class="day ${S.simDay === d ? 'is-today' : ''} ${isOpen ? 'is-open' : 'is-closed'}" data-day="${d}" data-zone="${d}" aria-label="${FULL[d]}, ${esc(th.name)}">
+      h += `<section class="day ${S.simDay === d ? 'is-today' : ''}${isPast(d) ? ' is-past' : ''} ${isOpen ? 'is-open' : 'is-closed'}" data-day="${d}" data-zone="${d}" aria-label="${FULL[d]}, ${esc(th.name)}">
         <button type="button" class="day-toggle" data-act="toggle-day" data-val="${d}" aria-expanded="${isOpen}" aria-controls="day-${d}">
           <span class="day-head">
             <span class="day-name"><span>${themeIcon(d)}<strong>${FULL[d]}</strong></span><small>${esc(th.name)}</small></span>
