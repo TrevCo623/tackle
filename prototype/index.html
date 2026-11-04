@@ -1407,7 +1407,7 @@ a.proj-row { text-decoration: none; }
     if (m) return m;
     return WEEKDAYS.find((d) => THEMES[d].key === 'plan') || WEEKDAYS[0];
   }
-  const landsHTML = (day, isEdit) => `${themeIcon(day)}<span>${isEdit ? 'On' : 'Lands on'} <strong>${FULL[day]}</strong>${isPast(day) ? ', next week' : ` · ${esc(THEMES[day].name)}`}</span><button type="button" class="text-btn" data-act="day-open">Change</button>`;
+  const landsHTML = (day) => `${themeIcon(day)}<span><strong>${FULL[day]}</strong>${isPast(day) ? ', next week' : ` · ${esc(THEMES[day].name)}`}</span><button type="button" class="text-btn" data-act="day-open">Change</button>`;
 
   function learn(tag, day) {
     const p = tag && S.projects.find((x) => x.name === tag);
@@ -1600,7 +1600,7 @@ a.proj-row { text-decoration: none; }
     }
     // Day: the suggested-day box on both New and Edit; Change opens the full list.
     if (!sheet.dayOpen) {
-      h += `<p class="lands" id="lands">${landsHTML(D.day, isEdit)}</p>`;
+      h += `<div class="field-group"><p class="eyebrow" id="lands-lbl">Scheduled for</p><p class="lands" id="lands" aria-labelledby="lands-lbl">${landsHTML(D.day)}</p></div>`;
       if (isEdit && D.repeat && sheet.origDay !== D.day) h += `<p class="hint">Moves it to ${FULL[D.day]}s in your weekly plan.</p>`;
     } else {
     h += '<div class="field-group"><p class="eyebrow" id="day-lbl">Day</p><div class="day-list" role="radiogroup" aria-labelledby="day-lbl">' + WEEKDAYS.map((d) => {
