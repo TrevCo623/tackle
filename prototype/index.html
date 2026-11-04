@@ -466,6 +466,13 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 .proj-text strong { font-size: 16px; font-weight: 600; }
 .proj-text small { font-size: 13px; color: var(--muted); }
 .proj-row .chev { display: inline-flex; color: var(--muted); }
+.acct-page { display: flex; flex-direction: column; gap: 0; }
+.acct-page > .ghost-btn { margin-top: 22px; }
+.acct-page .acct-row { border-top: 1px solid var(--line); }
+.acct-page .proj-row:first-of-type, .acct-page .acct-row:first-child { border-top: 1px solid var(--line); }
+.proj-row.is-soon { color: var(--muted); }
+.proj-row.is-soon strong { color: var(--text2); }
+.day-chips { margin-bottom: -10px; }
 @media (prefers-reduced-motion: reduce) { .dd-chev { transition: none; } }
 
 
@@ -545,7 +552,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 /* Tab bar + FAB */
 .tabbar {
   position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: min(100%, 430px); z-index: 20;
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   background: var(--bg); border-top: 1px solid var(--line);
   padding: 6px max(12px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
 }
@@ -673,9 +680,13 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
     Week
   </a>
-  <a class="tab" href="#wrap" data-v="wrap">
-    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6M4 4v4.6h4.6"/></svg>
-    Wrap
+  <a class="tab" href="#all" data-v="all">
+    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>
+    All tasks
+  </a>
+  <a class="tab" href="#account" data-v="account">
+    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.4 3.8-5 7-5s5.8 1.6 7 5"/></svg>
+    Account
   </a>
 </nav>
 
@@ -795,7 +806,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
         { name: 'Personal', icon: 'home' }
       ],
       simDay: realDay(),
-      filters: { today: 'All', week: 'All' },
+      filters: { today: 'All', week: 'All', all: 'All' },
       starred: null,
       notes: { proud: '', better: '', next: '' },
       carry: {},
@@ -812,7 +823,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       tasks: [],
       projects: [],
       simDay: realDay(), weekOf: isoDay(thisMonday()),
-      filters: { today: 'All', week: 'All' },
+      filters: { today: 'All', week: 'All', all: 'All' },
       starred: null, notes: { proud: '', better: '', next: '' }, carry: {},
       wrapStep: 1, streak: 0, closed: null, notifCopy: 'theme', showDone: false
     };
@@ -849,6 +860,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 
   let S = load() || seed();
   S.carry = S.carry || {}; S.wrapStep = S.wrapStep || 1;
+  S.filters = Object.assign({ today: 'All', week: 'All', all: 'All' }, S.filters || {}); S.allDay = S.allDay || 'All';
   S.projects.forEach((p) => { if (p.day === undefined) p.day = LEGACY_HOME[p.name] || null; });
   if (APP) { S.simDay = realDay(); rollWeek(); }
   let sheet = null;      // { kind: 'task'|'move'|'plan', ... }
@@ -856,7 +868,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   let resetArmed = false;
   let toastTimer = null, notifTimer = null;
 
-  const view = () => { const h = location.hash.slice(1); return ['today', 'week', 'wrap'].includes(h) ? h : 'today'; };
+  const view = () => { const h = location.hash.slice(1); return ['today', 'week', 'wrap', 'all', 'account'].includes(h) ? h : 'today'; };
   const byId = (id) => S.tasks.find((t) => t.id === id);
 
   /* ---------- Pieces ---------- */
@@ -904,7 +916,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     };
   }
 
-  const acctBtn = () => APP && APP.user ? `<button type="button" class="acct-btn" data-act="account" aria-label="Account and reminders">${esc((APP.user().initial || '·'))}</button>` : '';
+  const acctBtn = () => '';
 
   /* ---------- Screens ---------- */
   function renderToday() {
@@ -949,10 +961,58 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 
   function dayOpen(d) { const o = S.weekOpen || {}; return d in o ? o[d] : d === S.simDay; }
 
+  const firstName = () => { const n = APP && APP.user ? (APP.user().name || '') : 'Trev'; const f = n.split(/[\s@]/)[0]; return f && !f.includes('.') ? f : ''; };
+  function heroHTML(where) {
+    const done = S.tasks.filter((t) => t.status === 'done');
+    const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+    const byProject = S.projects.map((p) => ({ p, n: done.filter((t) => t.tag === p.name).length })).filter((c) => c.n).sort((a, b) => b.n - a.n);
+    let h = `<section class="hero" aria-labelledby="hero-h-${where}">
+      <div class="hero-big"><strong>${done.length}</strong><span id="hero-h-${where}">${done.length === 1 ? 'Task' : 'Tasks'} completed<br>this week</span></div>`;
+    if (byProject.length) h += '<ul class="tally" aria-label="By project">' + byProject.map((c) => `<li><span class="tally-ico">${picon(c.p.icon, 16)}</span><b>${c.n}</b><small>${esc(c.p.name)}</small></li>`).join('') + '</ul>';
+    const foot = where === 'week' ? `Wrap it up on ${FULL[WRAP_DAY]} for your ${ord(S.streak + 1)} week in a row.` : `Close this out for your ${ord(S.streak + 1)} week in a row.`;
+    return h + `<p class="hero-foot">${foot}</p></section>`;
+  }
+
+  function renderAll() {
+    const f = S.filters.all, d = S.allDay;
+    const ord = { doing: 0, todo: 1, done: 2 };
+    const list = S.tasks.filter((t) => (f === 'All' || t.tag === f) && (d === 'All' || t.day === d) && (S.allDone || t.status !== 'done'))
+      .sort((a, b) => WEEKDAYS.indexOf(a.day) - WEEKDAYS.indexOf(b.day) || ord[a.status] - ord[b.status]);
+    const doneN = S.tasks.filter((t) => (f === 'All' || t.tag === f) && (d === 'All' || t.day === d) && t.status === 'done').length;
+    let h = `<header class="head"><p class="eyebrow">${list.length} ${list.length === 1 ? 'task' : 'tasks'}</p><h1>All tasks</h1></header>`;
+    h += '<div class="chips day-chips" role="group" aria-label="Filter by day">' + ['All'].concat(WEEKDAYS).map((x) =>
+      `<button type="button" class="chip" aria-pressed="${d === x}" data-act="all-day" data-val="${x}">${x === 'All' ? 'Every day' : x}</button>`).join('') + '</div>';
+    h += chips('all');
+    h += '<section class="wcards" aria-label="Tasks">';
+    if (!list.length) h += `<p class="quiet-note">${S.tasks.length ? 'Nothing matches these filters.' : 'No tasks yet. Tap + to add one.'}</p>`;
+    h += list.map((t) => {
+      const cls = (t.status === 'done' ? ' is-done' : '') + (t.status === 'doing' ? ' is-doing' : '');
+      const bits = [FULL[t.day]];
+      if (t.status === 'doing') bits.push('In progress');
+      if (t.dep) bits.push('Waiting');
+      return `<div class="wcard${cls}">
+        <button type="button" class="wcard-main" data-act="edit" data-id="${t.id}">${tile(t.tag, true)}
+          <span class="wcard-text"><span>${esc(t.label)}</span><small>${t.repeat ? ICON.repeat : ''}${bits.join(' · ')}</small></span></button>
+        <button type="button" class="more" data-act="menu" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button></div>`;
+    }).join('') + '</section>';
+    if (doneN) h += `<button type="button" class="text-btn" data-act="all-done">${S.allDone ? 'Hide' : 'Show'} ${doneN} done</button>`;
+    return h;
+  }
+
+  function renderAccount() {
+    let h = '<header class="head"><h1>Account</h1></header><section class="acct-page">';
+    if (APP && APP.accountBody) h += APP.accountBody();
+    h += `<button type="button" class="proj-row" data-act="projects"><span class="proj-text"><strong>Projects</strong><small>${S.projects.length} ${S.projects.length === 1 ? 'project' : 'projects'} · rename, change icons, delete</small></span><span class="chev">${ICON.chev}</span></button>
+      <div class="proj-row is-soon"><span class="proj-text"><strong>Weekly rhythm</strong><small>Set the theme for each day · coming soon</small></span></div>`;
+    if (APP && APP.user) h += '<button type="button" class="ghost-btn" data-act="sign-out">Sign out</button>';
+    return h + '</section>';
+  }
+
   function renderWeek() {
     const f = S.filters.week;
     let h = `<header class="week-head"><div class="head"><p class="eyebrow">${fmt(dateOf('Mon'))} – ${fmt(dateOf('Fri'))}</p><h1>This week</h1></div>
       <p class="legend">${ICON.repeat} = every week</p></header>`;
+    h += heroHTML('week');
     const allOpen = WEEKDAYS.every(dayOpen);
     h += chips('week');
     h += `<div class="week-tools"><button type="button" class="text-btn" data-act="toggle-all">${allOpen ? 'Collapse all' : 'Expand all'}</button></div>`;
@@ -1055,13 +1115,9 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     const done = S.tasks.filter((t) => t.status === 'done');
 
     if (n === 1) {
-      h += `<header class="head"><p class="eyebrow">${esc(date)}</p><h1>${done.length ? 'Good week, Trev.' : 'The week so far'}</h1>
+      h += `<header class="head"><p class="eyebrow">${esc(date)}</p><h1>${done.length ? (firstName() ? `Good week, ${esc(firstName())}.` : 'Good week.') : 'The week so far'}</h1>
         <p class="lede">${done.length ? 'Look at what you moved forward.' : 'Wins land here as you finish things.'}</p></header>`;
-      const byProject = S.projects.map((p) => ({ p, n: done.filter((t) => t.tag === p.name).length })).filter((c) => c.n).sort((a, b) => b.n - a.n);
-      h += `<section class="hero" aria-labelledby="hero-h">
-        <div class="hero-big"><strong>${done.length}</strong><span id="hero-h">${done.length === 1 ? 'Task' : 'Tasks'} completed<br>this week</span></div>`;
-      if (done.length) h += '<ul class="tally" aria-label="By project">' + byProject.map((c) => `<li><span class="tally-ico">${picon(c.p.icon, 16)}</span><b>${c.n}</b><small>${esc(c.p.name)}</small></li>`).join('') + '</ul>';
-      h += `<p class="hero-foot">Close this out for your ${ord(S.streak + 1)} week in a row.</p></section>`;
+      h += heroHTML('wrap');
       if (done.length) {
         h += '<section class="wins" aria-labelledby="wins-h"><div class="wins-head"><h2 id="wins-h">Completed</h2></div>';
         h += done.map((t) => `<div class="win">${tile(t.tag, true)}<span>${esc(t.label)}</span></div>`).join('') + '</section>';
@@ -1489,6 +1545,8 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     if (a !== 'reset' && resetArmed) { resetArmed = false; $('#proto').innerHTML = renderProto(); }
     switch (a) {
       case 'filter': S.filters[el.dataset.scope] = val; break;
+      case 'all-day': S.allDay = val; break;
+      case 'all-done': S.allDone = !S.allDone; break;
       case 'cycle': t.status = NEXT[t.status]; break;
       case 'status': openSheet({ kind: 'status', id }); return;
       case 'hold-open': sheet.holdOpen = true; renderSheet(); $('#f-hold').focus(); return;
@@ -1497,7 +1555,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       case 'set-status': { const m = byId(sheet.id); m.status = val; closeSheet(); toast(m.status === 'done' ? 'Marked done' : m.status === 'doing' ? 'In progress' : 'Back to to do'); break; }
       case 'edit': openSheet({ kind: 'task', mode: 'edit', id, origDay: t.day, draft: { label: t.label, tag: t.tag, day: t.day, status: t.status, dep: t.dep, repeat: t.repeat, notes: t.notes || '' } }); return;
       case 'add': case 'plan-add': {
-        const f = S.filters[view() === 'week' ? 'week' : 'today'];
+        const f = S.filters[view() === 'week' ? 'week' : view() === 'all' ? 'all' : 'today'];
         const tag = f && f !== 'All' && S.projects.some((p) => p.name === f) ? f : '';
         openSheet({ kind: 'task', mode: 'add', draft: { label: '', tag, day: dayForProject(tag), status: 'todo', dep: '', repeat: false, notes: '' } }); $('#f-label').focus(); return;
       }
@@ -1544,7 +1602,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
         const p = S.projects[sheet.index];
         S.tasks.forEach((t) => { if (t.tag === p.name) t.tag = ''; });
         retagDrafts(sheet, p.name, '');
-        ['today', 'week'].forEach((k) => { if (S.filters[k] === p.name) S.filters[k] = 'All'; });
+        ['today', 'week', 'all'].forEach((k) => { if (S.filters[k] === p.name) S.filters[k] = 'All'; });
         S.projects.splice(sheet.index, 1);
         const back = sheet.back && sheet.back.kind === 'projects' ? sheet.back : { kind: 'projects', back: null };
         openSheet(back); toast(p.name + ' deleted'); break;
@@ -1572,7 +1630,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       case 'account': openSheet({ kind: 'account' }); return;
       case 'sign-in': APP.signIn(); return;
       case 'sign-out': closeSheet(); APP.signOut(); return;
-      case 'nudge-toggle': (APP.nudgeOn() ? APP.pushOff() : APP.pushOn(S.nudgeTime || '08:30')).then(() => renderSheet()); return;
+      case 'nudge-toggle': (APP.nudgeOn() ? APP.pushOff() : APP.pushOn(S.nudgeTime || '08:30')).then(() => (sheet ? renderSheet() : render())); return;
       case 'notif-open': $('#notif').hidden = true; if (view() !== 'today') { location.hash = 'today'; return; } break;
       case 'reset':
         if (!resetArmed) { resetArmed = true; $('#proto').innerHTML = renderProto(); return; }
@@ -1603,7 +1661,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       if (old !== name) {
         S.tasks.forEach((t) => { if (t.tag === old) t.tag = name; });
         retagDrafts(sheet, old, name);
-        ['today', 'week'].forEach((k) => { if (S.filters[k] === old) S.filters[k] = name; });
+        ['today', 'week', 'all'].forEach((k) => { if (S.filters[k] === old) S.filters[k] = name; });
       }
       save(); openSheet(sheet.back || { kind: 'projects' }); render(); toast('Project saved'); return;
     }
@@ -1645,13 +1703,13 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       if (APP.gate) { const g = APP.gate(); if (g) { $('#app').innerHTML = g; document.body.classList.add('is-gated'); return; } }
       document.body.classList.remove('is-gated');
     } else $('#proto').innerHTML = renderProto();
-    $('#app').innerHTML = v === 'today' ? renderToday() : v === 'week' ? renderWeek() : renderWrap();
+    $('#app').innerHTML = v === 'today' ? renderToday() : v === 'week' ? renderWeek() : v === 'all' ? renderAll() : v === 'account' ? renderAccount() : renderWrap();
     $('#app').classList.toggle('is-wrap', v === 'wrap');
     lastView = v; lastSimDay = S.simDay;
     document.querySelectorAll('.tab').forEach((tab) => {
       if (tab.dataset.v === v) tab.setAttribute('aria-current', 'page'); else tab.removeAttribute('aria-current');
     });
-    $('#fab').hidden = v === 'wrap';
+    $('#fab').hidden = v === 'wrap' || v === 'account';
   }
 
   // Tap and hold a Week or Plan card, then drag it to another day or another spot in a day.
