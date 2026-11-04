@@ -1149,9 +1149,9 @@ a.proj-row { text-decoration: none; }
     const list = S.tasks.filter((t) => (f === 'All' || t.tag === f) && dayOk(t) && (S.allDone || t.status !== 'done'))
       .sort((a, b) => key(a) - key(b) || ord[a.status] - ord[b.status]);
     const doneN = S.tasks.filter((t) => (f === 'All' || t.tag === f) && dayOk(t) && t.status === 'done').length;
-    let h = slotHead('All tasks');
+    const openN = S.tasks.filter((t) => (f === 'All' || t.tag === f) && dayOk(t) && t.status !== 'done').length;
+    let h = slotHead(`${openN} open ${openN === 1 ? 'task' : 'tasks'}`, '', 'All tasks');
     h += '<div class="dd-row">' + dayDD('all-day', d, true) + projDD('all') + '</div>';
-    h += `<p class="eyebrow all-count">${list.length} ${list.length === 1 ? 'task' : 'tasks'}</p>`;
     if (!list.length) h += `<p class="quiet-note">${S.tasks.length ? 'Nothing matches these filters.' : 'No tasks yet. Tap + to add one.'}</p>`;
     // Same rows as Today, one list; the Day filter does the grouping.
     if (list.length) h += '<section class="section" aria-label="Tasks">' + list.map((t) => row(t, '', 'all')).join('') + '</section>';
