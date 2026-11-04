@@ -471,7 +471,13 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 .proj-text small { font-size: 13px; color: var(--muted); }
 .proj-row .chev { display: inline-flex; color: var(--muted); }
 .acct-page { display: flex; flex-direction: column; gap: 0; }
-.acct-page > .ghost-btn { margin-top: 22px; }
+.acct-page > .ghost-btn { margin-top: 26px; }
+.page-head { display: flex; flex-direction: column; gap: 18px; padding-top: 12px; margin-bottom: 14px; }
+.page-head .sub-back { margin: 0 0 0 -6px; }
+.sheet.is-page .proj-list { margin-top: 4px; }
+.set-group { display: flex; flex-direction: column; margin-top: 24px; }
+.set-group:first-child { margin-top: 0; }
+.set-group > .eyebrow { margin-bottom: 6px; }
 .acct-page .acct-row { border-top: 1px solid var(--line); }
 .acct-page .proj-row:first-of-type, .acct-page .acct-row:first-child { border-top: 1px solid var(--line); }
 .proj-row.is-soon { color: var(--muted); }
@@ -564,6 +570,8 @@ a.proj-row { text-decoration: none; }
 .day-pick-btn strong { font-size: 17px; font-weight: 500; }
 .day-opt.is-on .day-pick-btn strong { font-weight: 600; }
 .day-pick-btn span { font-size: 13px; color: var(--text2); padding-top: 2px; }
+.day-pick-btn .ticon { align-self: center; margin-right: 2px; }
+.day-pick-btn span.ticon { padding-top: 0; }
 .repeat-btn {
   flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 40px; height: 40px;
   padding: 0; border-radius: 20px; border: 1px solid var(--line2); background: var(--card); color: var(--muted);
@@ -714,9 +722,9 @@ a.proj-row { text-decoration: none; }
     <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>
     All tasks
   </a>
-  <a class="tab" href="#account" data-v="account">
-    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.4 3.8-5 7-5s5.8 1.6 7 5"/></svg>
-    Account
+  <a class="tab" href="#settings" data-v="account">
+    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    Settings
   </a>
 </nav>
 
@@ -933,7 +941,7 @@ a.proj-row { text-decoration: none; }
   let resetArmed = false;
   let toastTimer = null, notifTimer = null;
 
-  const view = () => { const h = location.hash.slice(1); return ['today', 'week', 'wrap', 'all', 'account', 'rhythm'].includes(h) ? h : 'today'; };
+  const view = () => { let h = location.hash.slice(1); if (h === 'settings') h = 'account'; return ['today', 'week', 'wrap', 'all', 'account', 'rhythm'].includes(h) ? h : 'today'; };
   const byId = (id) => S.tasks.find((t) => t.id === id);
 
   /* ---------- Pieces ---------- */
@@ -1068,19 +1076,33 @@ a.proj-row { text-decoration: none; }
     return h;
   }
 
+  // Settings: account, notifications, your week. The prototype shows stand-in account and nudge rows.
+  const NUDGE_TIMES = Array.from({ length: 96 }, (_, i) => String(Math.floor(i / 4)).padStart(2, '0') + ':' + String((i % 4) * 15).padStart(2, '0'));
+  const timeLabel = (hm) => { const [h, m] = hm.split(':').map(Number); return (h % 12 || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? 'am' : 'pm'); };
+  function protoNudgeRows() {
+    const on = !!S.protoNudge, time = S.nudgeTime || '08:30';
+    return `<div class="acct-row"><p><strong id="nudge-l">Daily nudge</strong><small>“What do you want to tackle today?” on your themed days.</small></p>
+        <button type="button" class="switch" role="switch" aria-checked="${on}" aria-labelledby="nudge-l" data-act="proto-nudge"></button></div>
+      ${on ? `<div class="acct-row sub"><p><strong>Time</strong><small>Your time zone. Free days get nothing.</small></p>
+        <label class="time-pick"><span class="sr-only">Nudge time</span><select id="nudge-time">${NUDGE_TIMES.map((t) => `<option value="${t}"${t === time ? ' selected' : ''}>${timeLabel(t)}</option>`).join('')}</select></label></div>` : ''}`;
+  }
   function renderAccount() {
-    let h = '<header class="head"><h1>Account</h1></header><section class="acct-page">';
-    if (APP && APP.accountBody) h += APP.accountBody();
-    h += `<a class="proj-row rhythm-row" href="#rhythm"><span class="proj-text"><strong>Weekly rhythm</strong>
+    const real = APP && APP.user;
+    let h = '<section class="set-group" aria-labelledby="set-acct"><h2 class="eyebrow" id="set-acct">Account</h2>';
+    h += real ? APP.accountDetails() : '<div class="acct-row"><p><strong>Trev Connolly</strong><small>trev@example.com · Google</small></p></div>';
+    h += '</section><section class="set-group" aria-labelledby="set-notif"><h2 class="eyebrow" id="set-notif">Notifications</h2>';
+    h += real ? APP.nudgeRows() : protoNudgeRows();
+    h += `</section><section class="set-group" aria-labelledby="set-week"><h2 class="eyebrow" id="set-week">Your week</h2>
+      <a class="proj-row rhythm-row" href="#rhythm"><span class="proj-text"><strong>Weekly rhythm</strong>
         <span class="rhythm-mini">${ALLDAYS.map((x) => `<span class="rm-row${THEMES[x] ? '' : ' is-free'}"><span class="rm-day">${x}</span>${themeIcon(x, 16)}<span class="rm-name">${esc(THEMES[x] ? THEMES[x].short : 'Free')}</span></span>`).join('')}</span></span><span class="chev">${ICON.chev}</span></a>
-      <button type="button" class="proj-row" data-act="projects"><span class="proj-text"><strong>Projects</strong><small>${S.projects.length} ${S.projects.length === 1 ? 'project' : 'projects'}</small></span><span class="chev">${ICON.chev}</span></button>`;
-    if (APP && APP.user) h += '<button type="button" class="ghost-btn" data-act="sign-out">Sign out</button>';
-    return h + '</section>';
+      <button type="button" class="proj-row" data-act="projects"><span class="proj-text"><strong>Projects</strong><small>${S.projects.length} ${S.projects.length === 1 ? 'project' : 'projects'}</small></span><span class="chev">${ICON.chev}</span></button></section>`;
+    h += real ? '<button type="button" class="ghost-btn" data-act="sign-out">Sign out</button>' : '<button type="button" class="ghost-btn" disabled>Sign out</button>';
+    return '<header class="head"><h1>Settings</h1></header><div class="acct-page">' + h + '</div>';
   }
 
   function renderRhythm() {
     const open = S.rhythmOpen || { [WEEKDAYS[0]]: true };
-    let h = `<a class="wrap-back sub-back" href="#account">${ICON.back}Account</a>
+    let h = `<a class="wrap-back sub-back" href="#settings">${ICON.back}Settings</a>
       <header class="head"><p class="eyebrow">Your week</p><h1>Weekly rhythm</h1>
       <p class="lede">Give each day a theme, then say what kind of work belongs there. When you add a task, Tackle puts it on the day it fits, by its project’s usual day or by matching its words to what you write here. You can always move it.</p>
       <p class="hint">Your weekly Wrap happens on ${FULL[wrapDay()]}${S.rhythm && ALLDAYS.some((x) => S.rhythm[x].key === 'wrap') ? ', your Wrap Up day' : '. Give a day the Wrap Up theme to move it'}.</p></header>`;
@@ -1347,7 +1369,7 @@ a.proj-row { text-decoration: none; }
     else if (sheet.kind === 'account') body = APP.accountSheet(head, esc);
     else body = planSheet();
     root.innerHTML = `<button type="button" class="scrim" data-act="close-sheet" aria-label="Close" tabindex="-1"></button>
-      <div class="sheet${sheet.kind === 'task' ? ' is-page' : ''}" role="dialog" aria-modal="true" aria-labelledby="sheet-h">${sheet.kind === 'task' ? '' : '<span class="grab" aria-hidden="true"></span>'}${body}</div>`;
+      <div class="sheet${sheet.kind === 'task' || sheet.page ? ' is-page' : ''}" role="dialog" aria-modal="true" aria-labelledby="sheet-h">${sheet.kind === 'task' || sheet.page ? '' : '<span class="grab" aria-hidden="true"></span>'}${body}</div>`;
     root.hidden = false;
     if (sheet.kind === 'status' || (sheet.kind === 'task' && sheet.mode === 'edit')) bindSlider();
   }
@@ -1529,8 +1551,12 @@ a.proj-row { text-decoration: none; }
         <button type="button" class="danger-btn" data-act="carry-remove">Remove</button></div>`;
   }
 
+  // Full-page header for screens opened from Settings: a back link, then the big title.
+  const pageHead = (backLabel, backAct, title, eyebrow) => `<div class="page-head"><button type="button" class="wrap-back sub-back" data-act="${backAct}">${ICON.back}${backLabel}</button>
+    <header class="head">${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ''}<h1 id="sheet-h">${esc(title)}</h1></header></div>`;
+
   function projectsSheet() {
-    let h = (sheet.back ? `<div class="sheet-head"><div class="preview-chip"><button type="button" class="back-btn" data-act="sheet-back" aria-label="Back">${ICON.back}</button><h2 id="sheet-h">Projects</h2></div><button type="button" class="icon-btn" data-act="close-sheet" aria-label="Close">${ICON.close}</button></div>` : head('Projects'));
+    let h = sheet.page ? pageHead('Settings', 'close-sheet', 'Projects') : (sheet.back ? `<div class="sheet-head"><div class="preview-chip"><button type="button" class="back-btn" data-act="sheet-back" aria-label="Back">${ICON.back}</button><h2 id="sheet-h">Projects</h2></div><button type="button" class="icon-btn" data-act="close-sheet" aria-label="Close">${ICON.close}</button></div>` : head('Projects'));
     h += '<div class="proj-list">';
     if (!S.projects.length) h += '<p class="quiet-note">No projects yet. Tasks don’t need one.</p>';
     h += S.projects.map((p, i) => {
@@ -1566,15 +1592,19 @@ a.proj-row { text-decoration: none; }
 
   function projectSheet() {
     const P = sheet.draft, isEdit = sheet.index != null;
-    let h = head(isEdit ? 'Edit project' : 'New project') + '<form id="project-form" novalidate>';
+    let h = (sheet.page ? pageHead('Projects', 'project-cancel', isEdit ? (P.name || 'Project') : 'New project', isEdit ? 'Edit project' : '') : head(isEdit ? 'Edit project' : 'New project')) + '<form id="project-form" novalidate>';
     h += `<div class="field-group"><label for="p-name">Name</label><input class="field" id="p-name" value="${esc(P.name)}" autocomplete="off" placeholder="Client C, Garden, Portfolio…">
       ${sheet.error ? `<p class="error">${sheet.error}</p>` : ''}</div>`;
     h += '<div class="field-group"><p class="eyebrow">Icon</p><div class="icon-grid" role="group" aria-label="Icon">' +
       Object.keys(PICON).map((k) => `<button type="button" data-act="p-icon" data-val="${k}" aria-pressed="${P.icon === k}" aria-label="${k}">${picon(k, 22)}</button>`).join('') + '</div></div>';
-    if (isEdit) h += `<p class="hint">${P.day ? `Its new tasks go to ${FULL[P.day]}.` : 'Its new tasks go to Monday until you move one.'} Move one of its tasks to another day and new ones follow.</p>`;
+    const pd = THEMES[P.day] ? P.day : null;
+    h += '<div class="field-group"><p class="eyebrow" id="pday-lbl">Tasks fall on</p><div class="day-list" role="radiogroup" aria-labelledby="pday-lbl">'
+      + WEEKDAYS.map((d) => `<div class="day-opt${pd === d ? ' is-on' : ''}"><button type="button" role="radio" aria-checked="${pd === d}" class="day-pick-btn" data-act="p-day" data-val="${d}">${themeIcon(d)}<strong>${FULL[d]}</strong><span>${esc(THEMES[d].name)}</span></button></div>`).join('')
+      + `<div class="day-opt${!pd ? ' is-on' : ''}"><button type="button" role="radio" aria-checked="${!pd}" class="day-pick-btn" data-act="p-day" data-val="">${keyIcon('custom', 'Auto')}<strong>Let Tackle decide</strong></button></div>`
+      + `</div><p class="hint">${pd ? `New ${esc(P.name || 'project')} tasks land on ${FULL[pd]}.` : 'Each new task goes to the day whose description matches its words best.'} Moving one of its tasks to another day updates this.</p></div>`;
     h += `<div class="sheet-actions"><button type="submit" class="primary">${isEdit ? 'Save' : 'Create project'}</button>
       ${isEdit ? '<button type="button" class="text-btn danger" data-act="project-del-ask">Delete project</button>' : ''}
-      ${sheet.back ? `<button type="button" class="text-btn" data-act="project-cancel">${sheet.back.kind === 'task' ? 'Back to task' : 'Back'}</button>` : ''}</div></form>`;
+      ${sheet.back && !sheet.page ? `<button type="button" class="text-btn" data-act="project-cancel">${sheet.back.kind === 'task' ? 'Back to task' : 'Back'}</button>` : ''}</div></form>`;
     return h;
   }
 
@@ -1698,6 +1728,7 @@ a.proj-row { text-decoration: none; }
     switch (a) {
       case 'filter': S.filters[el.dataset.scope] = val; break;
       case 'all-day': S.allDay = val; break;
+      case 'proto-nudge': S.protoNudge = !S.protoNudge; if (S.protoNudge) toast('Daily nudge on (preview only)'); break;
       case 'rh-pick': openSheet({ kind: 'theme', day: val }); return;
       case 'rh-set': {
         const d = sheet.day, lib = libTheme(val), prev = S.rhythm[d];
@@ -1755,12 +1786,12 @@ a.proj-row { text-decoration: none; }
         S.tasks.splice(i, 1); save(); closeSheet(); render(); toast('Task deleted', true); return;
       }
       case 'new-project': openSheet({ kind: 'project', back: sheet, draft: { name: '', icon: 'flag' } }); $('#p-name').focus(); return;
-      case 'projects': openSheet({ kind: 'projects', back: sheet && sheet.kind === 'task' ? sheet : (sheet && sheet.kind === 'account' ? sheet : null) }); return;
+      case 'projects': openSheet(sheet ? { kind: 'projects', back: sheet.kind === 'task' || sheet.kind === 'account' ? sheet : null } : { kind: 'projects', page: true }); return;
       case 'sheet-back': openSheet(sheet.back); return;
-      case 'project-new': openSheet({ kind: 'project', back: sheet, draft: { name: '', icon: 'flag' } }); $('#p-name').focus(); return;
-      case 'project-edit': { const p = S.projects[+val]; openSheet({ kind: 'project', index: +val, back: sheet, draft: { name: p.name, icon: p.icon, day: p.day } }); return; }
+      case 'project-new': openSheet({ kind: 'project', page: sheet.page, back: sheet, draft: { name: '', icon: 'flag' } }); $('#p-name').focus(); return;
+      case 'project-edit': { const p = S.projects[+val]; openSheet({ kind: 'project', page: sheet.page, index: +val, back: sheet, draft: { name: p.name, icon: p.icon, day: p.day } }); return; }
       case 'project-del-ask': openSheet({ kind: 'confirm-project', index: sheet.index, back: sheet.back }); return;
-      case 'project-keep': openSheet({ kind: 'projects', back: sheet.back && sheet.back.back }); return;
+      case 'project-keep': openSheet(sheet.back && sheet.back.kind === 'projects' ? sheet.back : { kind: 'projects', page: true }); return;
       case 'project-delete': {
         const p = S.projects[sheet.index];
         S.tasks.forEach((t) => { if (t.tag === p.name) t.tag = ''; });
@@ -1771,6 +1802,7 @@ a.proj-row { text-decoration: none; }
         openSheet(back); toast(p.name + ' deleted'); break;
       }
       case 'p-icon': sheet.draft.icon = val; renderSheet(); return;
+      case 'p-day': sheet.draft.day = val || null; renderSheet(); return;
       case 'project-cancel': openSheet(sheet.back); return;
       case 'close-sheet': closeSheet(); return;
       case 'plan': openSheet({ kind: 'plan' }); return;
@@ -1820,7 +1852,7 @@ a.proj-row { text-decoration: none; }
     if (S.projects.some((p, i) => i !== sheet.index && p.name.toLowerCase() === name.toLowerCase())) { sheet.error = 'You already have a project called ' + name + '.'; renderSheet(); $('#p-name').focus(); return; }
     if (sheet.index != null) {
       const p = S.projects[sheet.index], old = p.name;
-      p.name = name; p.icon = P.icon;
+      p.name = name; p.icon = P.icon; p.day = THEMES[P.day] ? P.day : null;
       if (old !== name) {
         S.tasks.forEach((t) => { if (t.tag === old) t.tag = name; });
         retagDrafts(sheet, old, name);
@@ -1828,7 +1860,7 @@ a.proj-row { text-decoration: none; }
       }
       save(); openSheet(sheet.back || { kind: 'projects' }); render(); toast('Project saved'); return;
     }
-    S.projects.push({ name, icon: P.icon, day: null });
+    S.projects.push({ name, icon: P.icon, day: THEMES[P.day] ? P.day : null });
     save();
     const back = sheet.back;
     if (back && back.kind === 'task') { back.draft.tag = name; back.projOpen = false; if (back.mode === 'add' && !back.dayTouched) back.draft.day = autoDay(back.draft.label, name); }
@@ -1857,7 +1889,7 @@ a.proj-row { text-decoration: none; }
   document.addEventListener('change', (e) => {
     const el = e.target;
     if (el.dataset && el.dataset.carry) { const t = byId(el.dataset.carry); if (t) { carryOf(t).day = el.value; learn(t.tag, el.value); save(); render(); } }
-    if (el.id === 'nudge-time' && APP) { S.nudgeTime = el.value; save(); APP.setNudgeTime(el.value); }
+    if (el.id === 'nudge-time') { S.nudgeTime = el.value; save(); if (APP) APP.setNudgeTime(el.value); }
   });
 
   document.addEventListener('keydown', (e) => {

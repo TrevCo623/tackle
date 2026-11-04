@@ -133,18 +133,20 @@
   };
 
   A.accountSheet = (head) => head('Account') + A.accountBody();
-  A.accountBody = () => {
+  A.accountDetails = () => {
     const u = A.user();
+    return `<div class="acct-row"><p><strong>${esc(u.name || 'Signed in')}</strong><small>${esc(u.email || '')} · Google</small></p></div>`;
+  };
+  A.nudgeRows = () => {
     const time = (A.getState().nudgeTime) || '08:30';
     const blocked = needsInstall() || !pushSupported();
     const hint = needsInstall() ? 'Add Tackle to your Home Screen (Share → Add to Home Screen), then turn it on from there.'
       : !pushSupported() ? 'Not available in this browser.' : '“What do you want to tackle today?” on your themed days.';
     const on = !!pushSub;
-    return `
-      <div class="acct-row"><p><strong>${esc(u.name || 'Signed in')}</strong><small>${esc(u.email || '')}</small></p></div>
-      <div class="acct-row"><p><strong id="nudge-l">Daily nudge</strong><small>${esc(hint)}</small></p>
+    return `<div class="acct-row"><p><strong id="nudge-l">Daily nudge</strong><small>${esc(hint)}</small></p>
         <button type="button" class="switch" role="switch" aria-checked="${on}" aria-labelledby="nudge-l" data-act="nudge-toggle"${blocked ? ' disabled' : ''}></button></div>
       ${on ? `<div class="acct-row sub"><p><strong>Time</strong><small>Your time zone. Free days get nothing.</small></p>
         <label class="time-pick"><span class="sr-only">Nudge time</span><select id="nudge-time">${TIMES.map((t) => `<option value="${t}"${t === time ? ' selected' : ''}>${label(t)}</option>`).join('')}</select></label></div>` : ''}`;
   };
+  A.accountBody = () => A.accountDetails() + A.nudgeRows();
 })();
