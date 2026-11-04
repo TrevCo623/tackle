@@ -131,6 +131,15 @@ body.is-gated, body.is-gated .shell { background: #1C1C1A; }
 
 .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
 .chips::-webkit-scrollbar { display: none; }
+.dd-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.week-tools:has(.dd) { justify-content: space-between; align-items: center; margin: 0 0 -6px; }
+label.dd { position: relative; display: inline-flex; flex-direction: row; margin: 0; align-items: center; gap: 7px; min-height: 36px; padding: 0 12px 0 14px; border-radius: 18px;
+  background: var(--card); font-size: 14px; color: var(--ink); }
+label.dd.is-set { background: var(--ink); color: var(--on-ink); }
+.dd .ico { display: inline-flex; } .dd .ico svg { width: 15px; height: 15px; }
+.dd .caret { display: inline-flex; transform: rotate(90deg); opacity: .6; } .dd .caret svg { width: 14px; height: 14px; }
+.dd select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; cursor: pointer; -webkit-appearance: none; appearance: none; }
+.dd:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
 .chip {
   flex-shrink: 0; min-height: 36px; padding: 0 14px; border-radius: 18px;
   border: 1px solid transparent; background: var(--card); font-size: 14px; color: var(--ink);
@@ -338,7 +347,7 @@ a.hero-link { text-decoration: none; }
 .donut-legend p { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--text2); }
 .donut-legend strong { font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
 .donut-legend small { font-size: 12.5px; color: var(--muted); }
-.key { width: 10px; height: 10px; border-radius: 3px; }
+.key { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
 .key.done { background: var(--ink); }
 .key.open { background: var(--card); border: 1px solid var(--line2); }
 .stat-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -993,14 +1002,21 @@ a.proj-row { text-decoration: none; }
   const byId = (id) => S.tasks.find((t) => t.id === id);
 
   /* ---------- Pieces ---------- */
-  function chips(scope) {
-    const used = S.projects.filter((p) => S.tasks.some((t) => t.tag === p.name));
-    return '<div class="chips" role="group" aria-label="Filter by project">' +
-      `<button type="button" class="chip" aria-pressed="${S.filters[scope] === 'All'}" data-act="filter" data-scope="${scope}" data-val="All">All</button>` +
-      used.map((p) =>
-        `<button type="button" class="chip" aria-pressed="${S.filters[scope] === p.name}" data-act="filter" data-scope="${scope}" data-val="${esc(p.name)}"><span class="ico">${picon(p.icon, 15)}</span>${esc(p.name)}</button>`
-      ).join('') + '</div>';
+  // A pill that opens the native picker. opts: [[value, label]]; the first is "everything".
+  function dd(act, scope, cur, opts, aria, icon) {
+    const sel = opts.find((o) => o[0] === cur) || opts[0];
+    return `<label class="dd${sel[0] === opts[0][0] ? '' : ' is-set'}">${icon ? `<span class="ico">${icon}</span>` : ''}<span>${esc(sel[1])}</span><span class="caret">${ICON.chev}</span>
+      <select data-dd="${act}"${scope ? ` data-scope="${scope}"` : ''} aria-label="${aria}">${opts.map((o) => `<option value="${esc(o[0])}"${o[0] === sel[0] ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
   }
+  function projDD(scope) {
+    const used = S.projects.filter((p) => S.tasks.some((t) => t.tag === p.name));
+    const cur = S.filters[scope], p = used.find((x) => x.name === cur);
+    return dd('filter', scope, cur, [['All', 'All projects']].concat(used.map((x) => [x.name, x.name])), 'Filter by project', p ? picon(p.icon, 15) : '');
+  }
+  function dayDD(act, cur, next) {
+    return dd(act, '', cur, [['All', 'Every day']].concat(WEEKDAYS.map((x) => [x, FULL[x]]), next ? [['Next', 'Next week']] : []), 'Filter by day');
+  }
+  function chips(scope) { return '<div class="dd-row">' + projDD(scope) + '</div>'; }
 
   const projGlyph = (name) => !name ? '' : `<span class="pglyph" role="img" aria-label="Project: ${esc(name)}" title="${esc(name)}">${picon(projectOf(name).icon, 13)}</span>`;
   const moreBtn = (t) => `<button type="button" class="more" data-act="menu" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button>`;
@@ -1106,9 +1122,7 @@ a.proj-row { text-decoration: none; }
       .sort((a, b) => key(a) - key(b) || ord[a.status] - ord[b.status]);
     const doneN = S.tasks.filter((t) => (f === 'All' || t.tag === f) && dayOk(t) && t.status === 'done').length;
     let h = `<header class="head"><p class="eyebrow">${list.length} ${list.length === 1 ? 'task' : 'tasks'}</p><h1>All tasks</h1></header>`;
-    h += '<div class="chips day-chips" role="group" aria-label="Filter by day">' + ['All'].concat(WEEKDAYS, ['Next']).map((x) =>
-      `<button type="button" class="chip" aria-pressed="${d === x}" data-act="all-day" data-val="${x}">${x === 'All' ? 'Every day' : x === 'Next' ? 'Next week' : x}</button>`).join('') + '</div>';
-    h += chips('all');
+    h += '<div class="dd-row">' + dayDD('all-day', d, true) + projDD('all') + '</div>';
     h += '<section class="wcards" aria-label="Tasks">';
     if (!list.length) h += `<p class="quiet-note">${S.tasks.length ? 'Nothing matches these filters.' : 'No tasks yet. Tap + to add one.'}</p>`;
     h += list.map((t) => {
@@ -1213,9 +1227,7 @@ a.proj-row { text-decoration: none; }
     const list = done.filter((t) => (sf === 'All' || t.tag === sf) && (sd === 'All' || t.day === sd))
       .sort((a, b) => WEEKDAYS.indexOf(a.day) - WEEKDAYS.indexOf(b.day));
     h += `<section class="sum-block" aria-labelledby="done-list"><h2 class="eyebrow" id="done-list">Completed · ${list.length}</h2>`;
-    h += '<div class="chips day-chips" role="group" aria-label="Filter by day">' + ['All'].concat(WEEKDAYS).map((x) =>
-      `<button type="button" class="chip" aria-pressed="${sd === x}" data-act="sum-day" data-val="${x}">${x === 'All' ? 'Every day' : x}</button>`).join('') + '</div>';
-    h += chips('sum');
+    h += '<div class="dd-row">' + dayDD('sum-day', sd) + projDD('sum') + '</div>';
     h += '<div class="wcards">';
     if (!list.length) h += `<p class="quiet-note">${done.length ? 'Nothing done matches these filters.' : 'Nothing finished yet this week. Wins land here.'}</p>`;
     h += list.map((t) => `<div class="wcard is-done-list">
@@ -1264,8 +1276,7 @@ a.proj-row { text-decoration: none; }
       <p class="legend">${ICON.repeat} = every week</p></header>`;
     h += heroHTML('week');
     const allOpen = WEEKDAYS.every(dayOpen);
-    h += chips('week');
-    h += `<div class="week-tools"><button type="button" class="text-btn" data-act="toggle-all">${allOpen ? 'Collapse all' : 'Expand all'}</button></div>`;
+    h += `<div class="week-tools">${projDD('week')}<button type="button" class="text-btn" data-act="toggle-all">${allOpen ? 'Collapse all' : 'Expand all'}</button></div>`;
     h += '<div class="days" id="days">';
     for (const d of WEEKDAYS) {
       const th = THEMES[d];
@@ -2034,6 +2045,7 @@ a.proj-row { text-decoration: none; }
   document.addEventListener('change', (e) => {
     const el = e.target;
     if (el.dataset && el.dataset.carry) { const t = byId(el.dataset.carry); if (t) { carryOf(t).day = el.value; learn(t.tag, el.value); save(); render(); } }
+    if (el.dataset && el.dataset.dd) { const v = el.value, a = el.dataset.dd; if (a === 'filter') S.filters[el.dataset.scope] = v; else if (a === 'all-day') S.allDay = v; else if (a === 'sum-day') S.sumDay = v; save(); render(); }
     if (el.id === 'nudge-time') { S.nudgeTime = el.value; save(); render(); if (APP) APP.setNudgeTime(el.value); }
   });
 
