@@ -476,6 +476,8 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 .proj-row.is-soon { color: var(--muted); }
 .proj-row.is-soon strong { color: var(--text2); }
 .day-chips { margin-bottom: -10px; }
+.next-link { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 44px; font-size: 14px; color: var(--text2); text-decoration: none; }
+.next-link svg { width: 14px; height: 14px; }
 @media (prefers-reduced-motion: reduce) { .dd-chev { transition: none; } }
 
 
@@ -845,6 +847,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
         if (t.status === 'done' && !t.repeat) return false;
         if (t.repeat) t.status = 'todo';
         if (t.home) { t.day = t.home; t.home = null; }
+        t.next = false;
         return true;
       });
       if (!S.closed) S.streak = 0;
@@ -913,7 +916,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   }
 
   function todayLists(day, filter) {
-    const mine = S.tasks.filter((t) => t.day === day && (filter === 'All' || t.tag === filter));
+    const mine = S.tasks.filter((t) => t.day === day && thisWeek(t) && (filter === 'All' || t.tag === filter));
     const ord = { doing: 0, todo: 1 };
     return {
       ready: mine.filter((t) => !t.dep && t.status !== 'done').sort((a, b) => ord[a.status] - ord[b.status]),
@@ -982,18 +985,20 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   function renderAll() {
     const f = S.filters.all, d = S.allDay;
     const ord = { doing: 0, todo: 1, done: 2 };
-    const list = S.tasks.filter((t) => (f === 'All' || t.tag === f) && (d === 'All' || t.day === d) && (S.allDone || t.status !== 'done'))
-      .sort((a, b) => WEEKDAYS.indexOf(a.day) - WEEKDAYS.indexOf(b.day) || ord[a.status] - ord[b.status]);
-    const doneN = S.tasks.filter((t) => (f === 'All' || t.tag === f) && (d === 'All' || t.day === d) && t.status === 'done').length;
+    const dayOk = (t) => d === 'All' || (d === 'Next' ? !!t.next : t.day === d && !t.next);
+    const key = (t) => (t.next ? 5 : 0) + WEEKDAYS.indexOf(t.day);
+    const list = S.tasks.filter((t) => (f === 'All' || t.tag === f) && dayOk(t) && (S.allDone || t.status !== 'done'))
+      .sort((a, b) => key(a) - key(b) || ord[a.status] - ord[b.status]);
+    const doneN = S.tasks.filter((t) => (f === 'All' || t.tag === f) && dayOk(t) && t.status === 'done').length;
     let h = `<header class="head"><p class="eyebrow">${list.length} ${list.length === 1 ? 'task' : 'tasks'}</p><h1>All tasks</h1></header>`;
-    h += '<div class="chips day-chips" role="group" aria-label="Filter by day">' + ['All'].concat(WEEKDAYS).map((x) =>
-      `<button type="button" class="chip" aria-pressed="${d === x}" data-act="all-day" data-val="${x}">${x === 'All' ? 'Every day' : x}</button>`).join('') + '</div>';
+    h += '<div class="chips day-chips" role="group" aria-label="Filter by day">' + ['All'].concat(WEEKDAYS, ['Next']).map((x) =>
+      `<button type="button" class="chip" aria-pressed="${d === x}" data-act="all-day" data-val="${x}">${x === 'All' ? 'Every day' : x === 'Next' ? 'Next week' : x}</button>`).join('') + '</div>';
     h += chips('all');
     h += '<section class="wcards" aria-label="Tasks">';
     if (!list.length) h += `<p class="quiet-note">${S.tasks.length ? 'Nothing matches these filters.' : 'No tasks yet. Tap + to add one.'}</p>`;
     h += list.map((t) => {
       const cls = (t.status === 'done' ? ' is-done' : '') + (t.status === 'doing' ? ' is-doing' : '');
-      const bits = [FULL[t.day]];
+      const bits = [(t.next ? 'Next ' : '') + FULL[t.day]];
       if (t.status === 'doing') bits.push('In progress');
       if (t.dep) bits.push('Waiting');
       return `<div class="wcard${cls}">
@@ -1026,7 +1031,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     for (const d of WEEKDAYS) {
       const th = THEMES[d];
       const ord = { doing: 0, todo: 1, done: 2 };
-      const tasks = S.tasks.filter((t) => t.day === d && (f === 'All' || t.tag === f)).sort((a, b) => ord[a.status] - ord[b.status]);
+      const tasks = S.tasks.filter((t) => t.day === d && thisWeek(t) && (f === 'All' || t.tag === f)).sort((a, b) => ord[a.status] - ord[b.status]);
       const openT = tasks.filter((t) => t.status !== 'done');
       const waiting = openT.filter((t) => t.dep).length;
       const doneN = tasks.length - openT.length;
@@ -1067,19 +1072,28 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       h += '</section>';
     }
     h += '<section class="day off-col" aria-label="Weekend"><p class="off">Sat – Sun · Off</p></section></div>';
+    const nx = S.tasks.filter((t) => t.next && (f === 'All' || t.tag === f)).length;
+    if (nx) h += `<a class="next-link" href="#all" data-act="see-next">${nx} ${nx === 1 ? 'task' : 'tasks'} set for next week${ICON.chev}</a>`;
     return h;
   }
 
   // Day picking: a project's tasks go to the day you last put them on (learned from moves and edits).
   // A theme that spans days (Client: Tue + Wed) picks the lighter one. New projects and no project: Monday.
-  const openOn = (d) => S.tasks.filter((t) => t.day === d && t.status !== 'done').length;
+  // A day that has already gone by this week. Tasks placed on it go to next week (t.next).
+  function isPast(day) {
+    if (APP && S.weekOf && new Date(S.weekOf + 'T00:00:00') > thisMonday()) return false; // week closed early: we're planning next week
+    const ti = ALLDAYS.indexOf(S.simDay);
+    return ti > 4 ? true : WEEKDAYS.indexOf(day) < ti;
+  }
+  const thisWeek = (t) => !t.next;
+  const openOn = (d) => S.tasks.filter((t) => t.day === d && !t.next && t.status !== 'done').length;
   const ahead = (d) => { const i = ALLDAYS.indexOf(S.simDay); return (ALLDAYS.indexOf(d) - (i > 4 ? 0 : i) + 7) % 7; };
   function dayForProject(tag) {
     const p = tag && S.projects.find((x) => x.name === tag);
     const base = (p && p.day) || 'Mon';
     const twins = WEEKDAYS.filter((d) => THEMES[d].key === THEMES[base].key);
     if (!p || twins.length < 2) return base;
-    return twins.slice().sort((a, b) => openOn(a) - openOn(b) || ahead(a) - ahead(b))[0];
+    return twins.slice().sort((a, b) => isPast(a) - isPast(b) || openOn(a) - openOn(b) || ahead(a) - ahead(b))[0];
   }
   function learn(tag, day) {
     const p = tag && S.projects.find((x) => x.name === tag);
@@ -1088,7 +1102,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   function suggestDay(t) { return t.tag ? dayForProject(t.tag) : t.day; }
   const carryOf = (t) => (S.carry[t.id] = S.carry[t.id] || {});
   const carryDay = (t) => carryOf(t).day || suggestDay(t);
-  const looseTasks = () => S.tasks.filter((t) => !t.repeat && t.status !== 'done');
+  const looseTasks = () => S.tasks.filter((t) => !t.repeat && !t.next && t.status !== 'done');
 
   function wrapStepper(n) {
     const names = ['This week', 'Next week', 'Confirm'];
@@ -1169,13 +1183,14 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       for (const w of WEEKDAYS) {
         const rec = S.tasks.filter((t) => t.repeat && (t.home || t.day) === w);
         const car = loose.filter((t) => carryDay(t) === w);
+        const nxt = S.tasks.filter((t) => t.next && !t.repeat && t.status !== 'done' && t.day === w);
         h += `<div class="plan-day" data-zone="${w}"><div class="plan-day-head">${themeIcon(w)}<strong>${FULL[w]}</strong><small>${esc(THEMES[w].name)}</small></div>`;
-        if (!rec.length && !car.length) h += '<p class="quiet-note">Nothing yet.</p>';
+        if (!rec.length && !car.length && !nxt.length) h += '<p class="quiet-note">Nothing yet.</p>';
         const card = (t, cls, sub) => `<div class="wcard${cls}" data-drag="${t.id}" data-ctx="plan"><div class="wcard-main">${tile(t.tag, true)}
           <span class="wcard-text"><span>${esc(t.label)}</span><small>${sub}</small></span></div>
           <button type="button" class="more" data-act="menu" data-ctx="plan" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button></div>`;
-        const items = S.tasks.filter((t) => car.includes(t) || rec.includes(t));
-        if (items.length) h += '<div class="wcards">' + items.map((t) => car.includes(t) ? card(t, ' moved', 'Carried over') : card(t, '', ICON.repeat + 'Every week')).join('') + '</div>';
+        const items = S.tasks.filter((t) => car.includes(t) || rec.includes(t) || nxt.includes(t));
+        if (items.length) h += '<div class="wcards">' + items.map((t) => car.includes(t) ? card(t, ' moved', 'Carried over') : nxt.includes(t) ? card(t, '', 'Added for next week') : card(t, '', ICON.repeat + 'Every week')).join('') + '</div>';
         h += '</div>';
       }
       h += '</section>';
@@ -1249,12 +1264,12 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       h += `<div class="field-group"><p class="eyebrow">Status</p>${sliderHTML(D.status)}</div>`;
     }
     if (!isEdit && !sheet.dayOpen) {
-      h += `<p class="lands">${themeIcon(D.day)}<span>Lands on <strong>${FULL[D.day]}</strong> · ${esc(THEMES[D.day].name)}</span><button type="button" class="text-btn" data-act="day-open">Change</button></p>`;
+      h += `<p class="lands">${themeIcon(D.day)}<span>Lands on <strong>${FULL[D.day]}</strong>${isPast(D.day) ? ', next week' : ` · ${esc(THEMES[D.day].name)}`}</span><button type="button" class="text-btn" data-act="day-open">Change</button></p>`;
     } else {
     h += '<div class="field-group"><p class="eyebrow" id="day-lbl">Day</p><div class="day-list" role="radiogroup" aria-labelledby="day-lbl">' + WEEKDAYS.map((d) => {
       const on = D.day === d;
       return `<div class="day-opt${on ? ' is-on' : ''}">
-        <button type="button" role="radio" aria-checked="${on}" class="day-pick-btn" data-act="d-day" data-val="${d}"><strong>${FULL[d]}</strong><span>${esc(THEMES[d].name)}</span></button>
+        <button type="button" role="radio" aria-checked="${on}" class="day-pick-btn" data-act="d-day" data-val="${d}"><strong>${FULL[d]}</strong><span>${esc(THEMES[d].name)}${isPast(d) && !(isEdit && d === byId(sheet.id).day && !byId(sheet.id).next) ? ' · next week' : ''}</span></button>
       </div>`;
     }).join('') + '</div>';
     if (isEdit && D.repeat && sheet.origDay !== D.day) h += `<p class="hint">Moves it to ${FULL[D.day]}s in your weekly plan.</p>`;
@@ -1489,10 +1504,11 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       if (t.status === 'done') { wins++; if (!t.repeat) return false; }
       else if (!t.repeat) {
         if (carryOf(t).removed) { dropped++; return false; }
-        t.day = target[t.id]; rolled++;
+        if (target[t.id]) { t.day = target[t.id]; rolled++; }
       }
       if (t.repeat) t.status = 'todo';
       if (t.home) { t.day = t.home; t.home = null; }
+      t.next = false;
       return true;
     });
     S.streak += 1;
@@ -1509,13 +1525,14 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     const clean = { label, tag: D.tag, day: D.day, status: D.status, dep, repeat: D.repeat, notes: (D.notes || '').trim() };
     if (sheet.mode === 'edit') {
       const t = byId(sheet.id);
-      if (t.day !== clean.day) { t.home = null; learn(clean.tag, clean.day); }
+      if (t.day !== clean.day) { t.home = null; learn(clean.tag, clean.day); t.next = isPast(clean.day); }
       Object.assign(t, clean);
       toast('Saved');
     } else {
       if (sheet.dayTouched) learn(clean.tag, clean.day);
-      S.tasks.push(Object.assign({ id: nid(), home: null }, clean));
-      toast('Added to ' + FULL[clean.day]);
+      const next = isPast(clean.day);
+      S.tasks.push(Object.assign({ id: nid(), home: null, next }, clean));
+      toast('Added to ' + FULL[clean.day] + (next ? ', next week' : ''));
     }
     save(); closeSheet(); render();
   }
@@ -1539,7 +1556,8 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       }
     } else msg = `${t.label} moved to ${FULL[to]}`;
     if (!t.repeat || sheet.scope !== 'week') learn(t.tag, to);
-    t.day = to;
+    t.day = to; t.next = isPast(to);
+    if (t.next) msg = `${t.label} moved to ${FULL[to]}, next week`;
     save(); closeSheet(); render(); toast(msg);
   }
 
@@ -1552,6 +1570,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     switch (a) {
       case 'filter': S.filters[el.dataset.scope] = val; break;
       case 'all-day': S.allDay = val; break;
+      case 'see-next': S.allDay = 'Next'; S.filters.all = S.filters.week; location.hash = 'all'; save(); return;
       case 'all-done': S.allDone = !S.allDone; break;
       case 'cycle': t.status = NEXT[t.status]; break;
       case 'status': openSheet({ kind: 'status', id }); return;
@@ -1775,6 +1794,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       else { msg = `${t.label} moved to ${FULL[to]}`; learn(t.tag, to); }
       if (d.ctx === 'plan') learn(t.tag, to);
       t.day = to;
+      if (d.ctx !== 'plan') { t.next = isPast(to); if (t.next) msg = `${t.label} moved to ${FULL[to]}, next week`; }
     }
     if (d.target) {
       const tgt = byId(d.target.dataset.drag);
