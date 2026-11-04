@@ -1023,11 +1023,12 @@ a.proj-row { text-decoration: none; }
   function row(t, cls, full) {
     const meta = [projGlyph(t.tag)];
     if (full && t.tag) meta.push('<span>' + esc(t.tag) + '</span>');
+    if (full) meta.push('<span class="rep">' + (t.repeat ? ICON.repeat : '') + (t.next ? 'Next ' : '') + FULL[t.day] + '</span>');
     if (full && t.status === 'todo' && !t.dep) meta.push('<span>To do</span>');
     if (full && t.status === 'done') meta.push('<span>Done</span>');
     if (t.dep && t.status !== 'done') meta.push(full ? `<span title="Waiting on ${esc(t.dep)}">Waiting</span>` : '<span>Waiting on: <b>' + esc(t.dep) + '</b></span>');
     if (t.status === 'doing') meta.push('<span class="flag">In progress</span>');
-    if (t.repeat && !t.home) meta.push('<span>Every week</span>');
+    if (t.repeat && !t.home && !full) meta.push('<span>Every week</span>');
     if (t.home) meta.push('<span>Moved here · usually ' + t.home + '</span>');
     return `<div class="row st-${t.status} ${cls || ''}">
       <button type="button" class="status" data-act="status" data-id="${t.id}" aria-label="${STATUS[t.status]}. Change status of ${esc(t.label)}" aria-haspopup="dialog">${ICON[t.status]}</button>
@@ -1127,10 +1128,8 @@ a.proj-row { text-decoration: none; }
     let h = `<header class="head"><p class="eyebrow">${list.length} ${list.length === 1 ? 'task' : 'tasks'}</p><h1>All tasks</h1></header>`;
     h += '<div class="dd-row">' + dayDD('all-day', d, true) + projDD('all') + '</div>';
     if (!list.length) h += `<p class="quiet-note">${S.tasks.length ? 'Nothing matches these filters.' : 'No tasks yet. Tap + to add one.'}</p>`;
-    // Same rows as Today, grouped under a day eyebrow.
-    const groups = [];
-    for (const t of list) { const g = (t.next ? 'Next ' : '') + FULL[t.day]; if (!groups.length || groups[groups.length - 1].g !== g) groups.push({ g, items: [] }); groups[groups.length - 1].items.push(t); }
-    h += groups.map((x, i) => `<section class="section" aria-labelledby="all-g${i}"><h2 class="eyebrow" id="all-g${i}">${x.g}</h2>${x.items.map((t) => row(t, '', true)).join('')}</section>`).join('');
+    // Same rows as Today, one list; the Day filter does the grouping.
+    if (list.length) h += '<section class="section" aria-label="Tasks">' + list.map((t) => row(t, '', true)).join('') + '</section>';
     if (doneN) h += `<button type="button" class="text-btn" data-act="all-done">${S.allDone ? 'Hide' : 'Show'} ${doneN} done</button>`;
     return h;
   }
