@@ -168,6 +168,9 @@ label.dd.is-set { background: var(--ink); color: var(--on-ink); }
 .row-meta .flag { color: var(--amber-text); }
 .row-meta .rep { display: inline-flex; align-items: center; gap: 3px; }
 .row-meta svg { width: 11px; height: 11px; }
+.row-meta.dep { flex-wrap: nowrap; min-width: 0; }
+.row-meta.dep > :not(.dep-on) { flex-shrink: 0; white-space: nowrap; }
+.row-meta .dep-on { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pglyph { display: inline-flex; align-items: center; color: var(--ink2); }
 .pglyph svg { width: 13px; height: 13px; }
 .row-meta > * + *::before { content: "·"; margin-right: 6px; color: var(--faint); }
@@ -784,7 +787,7 @@ a.proj-row { text-decoration: none; }
     All tasks
   </a>
   <a class="tab" href="#settings" data-v="account">
-    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8h4M14 8h6M4 16h10M20 16h0"/><circle cx="11" cy="8" r="2.6"/><circle cx="17" cy="16" r="2.6"/></svg>
+    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c1.2-3.6 4-5.2 7-5.2s5.8 1.6 7 5.2"/></svg>
     Settings
   </a>
 </nav>
@@ -1029,7 +1032,8 @@ a.proj-row { text-decoration: none; }
   function row(t, cls, full) {
     const meta = [projGlyph(t.tag)];
     if (full && t.tag) meta.push('<span>' + esc(t.tag) + '</span>');
-    if (full) meta.push('<span class="rep">' + (t.repeat ? ICON.repeat : '') + (t.next ? 'Next ' : '') + FULL[t.day] + '</span>');
+    if (full === 'all') meta.push('<span class="rep">' + (t.repeat ? ICON.repeat : '') + (t.next ? 'Next ' : '') + FULL[t.day] + '</span>');
+    if (full === 'today' && t.repeat && !t.home) meta.push('<span class="rep">' + ICON.repeat + 'Every week</span>');
     if (full && t.status === 'todo' && !t.dep) meta.push('<span>To do</span>');
     if (full && t.status === 'done') meta.push('<span>Done</span>');
     if (t.dep && t.status !== 'done') meta.push(full ? `<span title="Waiting on ${esc(t.dep)}">Waiting</span>` : '<span>Waiting on: <b>' + esc(t.dep) + '</b></span>');
@@ -1049,7 +1053,7 @@ a.proj-row { text-decoration: none; }
       <button type="button" class="status waiting-icon" data-act="status" data-id="${t.id}" aria-label="Waiting. Change status of ${esc(t.label)}" aria-haspopup="dialog">${t.status === 'doing' ? ICON.doing : ICON.link}</button>
       <button type="button" class="row-main" data-act="edit" data-id="${t.id}">
         <span class="row-label">${esc(t.label)}</span>
-        <span class="row-meta dep">${projGlyph(t.tag)}<span>Waiting on: <b>${esc(t.dep)}</b></span></span>
+        <span class="row-meta dep">${projGlyph(t.tag)}${t.tag ? `<span>${esc(t.tag)}</span>` : ''}<span class="dep-on">Waiting on ${esc(t.dep)}</span></span>
       </button>${moreBtn(t)}</div>`;
   }
 
@@ -1092,7 +1096,7 @@ a.proj-row { text-decoration: none; }
     h += chips('today');
     h += '<section class="section" aria-labelledby="ready-h"><h2 class="eyebrow" id="ready-h">Ready</h2>';
     if (L.ready.length) {
-      h += L.ready.map((t) => row(t)).join('');
+      h += L.ready.map((t) => row(t, '', 'today')).join('');
     } else {
       h += `<p class="quiet-note">${L.waiting.length ? 'Everything left is waiting on something.' : 'Nothing left for today. Enjoy the room.'}</p>`;
     }
@@ -1102,7 +1106,7 @@ a.proj-row { text-decoration: none; }
     }
     if (L.done.length) {
       h += `<section class="section"><button type="button" class="text-btn" data-act="toggle-done" aria-expanded="${S.showDone}">${L.done.length} done today${S.showDone ? ' · hide' : ''}</button>`;
-      if (S.showDone) h += L.done.map((t) => row(t)).join('');
+      if (S.showDone) h += L.done.map((t) => row(t, '', 'today')).join('');
       h += '</section>';
     }
     return h;
@@ -1135,7 +1139,7 @@ a.proj-row { text-decoration: none; }
     h += '<div class="dd-row">' + dayDD('all-day', d, true) + projDD('all') + '</div>';
     if (!list.length) h += `<p class="quiet-note">${S.tasks.length ? 'Nothing matches these filters.' : 'No tasks yet. Tap + to add one.'}</p>`;
     // Same rows as Today, one list; the Day filter does the grouping.
-    if (list.length) h += '<section class="section" aria-label="Tasks">' + list.map((t) => row(t, '', true)).join('') + '</section>';
+    if (list.length) h += '<section class="section" aria-label="Tasks">' + list.map((t) => row(t, '', 'all')).join('') + '</section>';
     if (doneN) h += `<button type="button" class="text-btn" data-act="all-done">${S.allDone ? 'Hide' : 'Show'} ${doneN} done</button>`;
     return h;
   }
