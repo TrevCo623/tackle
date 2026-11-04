@@ -325,14 +325,13 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 a.hero-link { text-decoration: none; }
 .hero-more { display: inline-flex; align-items: center; gap: 6px; margin-top: -12px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
 .hero-more svg { width: 16px; height: 16px; }
-.donut-card { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 18px 20px; text-align: center; border-radius: 16px; background: var(--surface); }
+.donut-card { display: flex; align-items: center; gap: 22px; padding: 18px; border-radius: 16px; background: var(--surface); }
 .donut { width: 148px; height: 148px; flex-shrink: 0; }
-.donut circle { fill: none; stroke-width: 14; }
+.donut circle { fill: none; stroke-width: 8; }
 .donut-rest { stroke: var(--card); }
 .donut-done { stroke: var(--ink); stroke-linecap: round; }
 .donut-pct { font-family: var(--display); font-size: 22px; fill: var(--ink); }
-.donut-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 22px; }
-.donut-legend small { flex-basis: 100%; }
+.donut-legend { display: flex; flex-direction: column; gap: 8px; }
 .donut-legend p { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--text2); }
 .donut-legend strong { font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
 .donut-legend small { font-size: 12.5px; color: var(--muted); }
@@ -1178,7 +1177,7 @@ a.proj-row { text-decoration: none; }
     let h = `<a class="wrap-back sub-back" href="#week">${ICON.back}Week</a>
       <header class="head"><p class="eyebrow">Progress</p><h1>${fmt(dateOf(WEEKDAYS[0]))} – ${fmt(dateOf(WEEKDAYS[WEEKDAYS.length - 1]))}</h1></header>`;
     h += heroHTML('summary');
-    const open = mine.length - done.length, R = 42, C = 2 * Math.PI * R;
+    const open = mine.length - done.length, R = 45, C = 2 * Math.PI * R;
     h += `<section class="donut-card" aria-label="${pct}% of planned tasks done, ${open} still open">
       <svg class="donut" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="${R}" class="donut-rest"/>
         <circle cx="50" cy="50" r="${R}" class="donut-done" stroke-dasharray="${(C * pct / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 50 50)"/>
