@@ -1289,8 +1289,7 @@ a.proj-row { text-decoration: none; }
 
   function renderWeek() {
     const f = S.filters.week;
-    let h = `<header class="week-head"><div class="head slotted"><div class="top-slot"><p class="eyebrow">${fmt(dateOf(WEEKDAYS[0]))} – ${fmt(dateOf(WEEKDAYS[WEEKDAYS.length - 1]))}</p></div><h1>This week</h1></div>
-      <p class="legend">${ICON.repeat} = every week</p></header>`;
+    let h = `<header class="head slotted"><div class="top-slot"><p class="eyebrow">${FULL[WEEKDAYS[0]]} ${fmt(dateOf(WEEKDAYS[0]))} – ${FULL[WEEKDAYS[WEEKDAYS.length - 1]]} ${fmt(dateOf(WEEKDAYS[WEEKDAYS.length - 1]))}</p></div><h1>This week</h1></header>`;
     h += heroHTML('week');
     const allOpen = WEEKDAYS.every(dayOpen);
     h += `<div class="week-tools">${projDD('week')}<button type="button" class="text-btn" data-act="toggle-all">${allOpen ? 'Collapse all' : 'Expand all'}</button></div>`;
