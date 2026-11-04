@@ -244,7 +244,7 @@ label.dd.is-set { background: var(--ink); color: var(--on-ink); }
 .day-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .chev-day { display: inline-flex; color: var(--muted); transition: transform 0.15s; }
 .day.is-open .chev-day { transform: rotate(90deg); }
-.day-sum { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 24px; padding-left: 26px; } /* lines up with the day name, past the theme icon */
+.day-sum { display: flex; align-items: center; gap: 10px; padding-left: 26px; margin-top: -2px; } /* lines up with the day name, past the theme icon */
 .day-sum-text { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .day-sum-icons { display: flex; gap: 4px; flex-shrink: 0; }
 .day-sum-icons .ptile { background: var(--card); }
@@ -1312,7 +1312,7 @@ a.proj-row { text-decoration: none; }
             <span class="day-name"><span>${themeIcon(d)}<strong>${FULL[d]}</strong></span><small>${esc(th.name)}</small></span>
             <span class="day-right">${S.simDay === d ? '<span class="pill">Today</span>' : `<span class="day-date">${fmt(dateOf(d))}</span>`}<span class="chev-day">${ICON.chev}</span></span>
           </span>
-          <span class="day-sum"><span class="day-sum-text">${parts.join(' · ')}</span>${!isOpen && icons ? `<span class="day-sum-icons" aria-hidden="true">${icons}</span>` : ''}</span>
+          <span class="day-sum"><span class="day-sum-text">${parts.join(' · ')}</span></span>
         </button>`;
       if (isOpen) {
         h += `<div id="day-${d}" class="day-body">`;
