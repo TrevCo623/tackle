@@ -980,7 +980,7 @@ a.proj-row { text-decoration: none; }
 
   let S = load() || seed();
   S.carry = S.carry || {}; S.wrapStep = S.wrapStep || 1;
-  S.filters = Object.assign({ today: 'All', week: 'All', all: 'All' }, S.filters || {}); S.allDay = S.allDay || 'All';
+  S.filters = Object.assign({ today: 'All', week: 'All', all: 'All', sum: 'All' }, S.filters || {}); S.allDay = S.allDay || 'All';
   applyRhythm();
   S.projects.forEach((p) => { if (p.day === undefined) p.day = LEGACY_HOME[p.name] || null; });
   if (APP) { S.simDay = realDay(); rollWeek(); }
@@ -1208,16 +1208,21 @@ a.proj-row { text-decoration: none; }
           <span class="col-track" style="--done:${x.done / maxD}" aria-label="${FULL[x.d]}: ${x.done} done"><i></i></span>
           ${themeIcon(x.d, 16)}<span class="col-day">${x.d}</span></div>`).join('')
       + '</div></section>';
-    // list
-    h += '<section class="sum-block" aria-labelledby="done-list"><h2 class="eyebrow" id="done-list">Completed</h2>';
-    if (!done.length) h += '<p class="quiet-note">Nothing finished yet this week. Wins land here.</p>';
-    for (const d of WEEKDAYS) {
-      const ds = done.filter((t) => t.day === d);
-      if (!ds.length) continue;
-      h += `<div class="done-day"><p class="done-day-head">${themeIcon(d, 16)}<strong>${FULL[d]}</strong><small>${ds.length}</small></p>`
-        + ds.map((t) => `<button type="button" class="win" data-act="edit" data-id="${t.id}">${tile(t.tag, true)}<span>${esc(t.label)}</span>${t.repeat ? `<em class="rep">${ICON.repeat}</em>` : ''}</button>`).join('') + '</div>';
-    }
-    return h + '</section>';
+    // list: like All tasks, always filtered to done
+    const sf = S.filters.sum || 'All', sd = S.sumDay || 'All';
+    const list = done.filter((t) => (sf === 'All' || t.tag === sf) && (sd === 'All' || t.day === sd))
+      .sort((a, b) => WEEKDAYS.indexOf(a.day) - WEEKDAYS.indexOf(b.day));
+    h += `<section class="sum-block" aria-labelledby="done-list"><h2 class="eyebrow" id="done-list">Completed · ${list.length}</h2>`;
+    h += '<div class="chips day-chips" role="group" aria-label="Filter by day">' + ['All'].concat(WEEKDAYS).map((x) =>
+      `<button type="button" class="chip" aria-pressed="${sd === x}" data-act="sum-day" data-val="${x}">${x === 'All' ? 'Every day' : x}</button>`).join('') + '</div>';
+    h += chips('sum');
+    h += '<div class="wcards">';
+    if (!list.length) h += `<p class="quiet-note">${done.length ? 'Nothing done matches these filters.' : 'Nothing finished yet this week. Wins land here.'}</p>`;
+    h += list.map((t) => `<div class="wcard is-done-list">
+        <button type="button" class="wcard-main" data-act="edit" data-id="${t.id}">${tile(t.tag, true)}
+          <span class="wcard-text"><span>${esc(t.label)}</span><small>${t.repeat ? ICON.repeat : ''}${FULL[t.day]}</small></span></button>
+        <button type="button" class="more" data-act="menu" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button></div>`).join('');
+    return h + '</div></section>';
   }
 
   function renderRhythm() {
@@ -1851,6 +1856,7 @@ a.proj-row { text-decoration: none; }
     switch (a) {
       case 'filter': S.filters[el.dataset.scope] = val; break;
       case 'all-day': S.allDay = val; break;
+      case 'sum-day': S.sumDay = val; break;
       case 'account-page': openSheet({ kind: 'account-page', page: true }); return;
       case 'notif-page': openSheet({ kind: 'notif-page', page: true }); return;
       case 'acct-del-ask': openSheet({ kind: 'confirm-account', back: sheet }); return;
@@ -1927,7 +1933,7 @@ a.proj-row { text-decoration: none; }
         const p = S.projects[sheet.index];
         S.tasks.forEach((t) => { if (t.tag === p.name) t.tag = ''; });
         retagDrafts(sheet, p.name, '');
-        ['today', 'week', 'all'].forEach((k) => { if (S.filters[k] === p.name) S.filters[k] = 'All'; });
+        ['today', 'week', 'all', 'sum'].forEach((k) => { if (S.filters[k] === p.name) S.filters[k] = 'All'; });
         S.projects.splice(sheet.index, 1);
         const back = sheet.back && sheet.back.kind === 'projects' ? sheet.back : { kind: 'projects', back: null };
         openSheet(back); toast(p.name + ' deleted'); break;
@@ -1994,7 +2000,7 @@ a.proj-row { text-decoration: none; }
       if (old !== name) {
         S.tasks.forEach((t) => { if (t.tag === old) t.tag = name; });
         retagDrafts(sheet, old, name);
-        ['today', 'week', 'all'].forEach((k) => { if (S.filters[k] === old) S.filters[k] = name; });
+        ['today', 'week', 'all', 'sum'].forEach((k) => { if (S.filters[k] === old) S.filters[k] = name; });
       }
       save(); openSheet(sheet.back || { kind: 'projects' }); render(); toast('Project saved'); return;
     }
