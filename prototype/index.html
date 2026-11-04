@@ -565,7 +565,7 @@ a.proj-row { text-decoration: none; }
 .rhythm .day.is-off .day-name small { color: var(--muted); }
 .rh-sum { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
 .rh-body { gap: 16px; padding-top: 0; }
-.rhythm .day-toggle { min-height: 28px; }
+.rhythm .day-toggle { min-height: 28px; justify-content: center; }
 .rh-select { position: relative; width: 100%; color: var(--ink); font: inherit; text-align: left; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--line2); background: var(--card); }
 .rh-select .dd-chev { margin-left: auto; transform: rotate(90deg); }
 .rh-val { font-size: 16px; }
@@ -1252,8 +1252,7 @@ a.proj-row { text-decoration: none; }
   function renderRhythm() {
     const open = S.rhythmOpen || { [WEEKDAYS[0]]: true };
     let h = `<header class="head slotted"><div class="top-slot">${backBtn('Settings', '', '#settings')}</div><h1>Weekly rhythm</h1>
-      <p class="lede">Give each day a theme, then say what kind of work belongs there. When you add a task, Tackle puts it on the day it fits, by its project’s usual day or by matching its words to what you write here. You can always move it.</p>
-      <p class="hint">Your weekly Wrap happens on ${FULL[wrapDay()]}${S.rhythm && ALLDAYS.some((x) => S.rhythm[x].key === 'wrap') ? ', your Wrap Up day' : '. Give a day the Wrap Up theme to move it'}.</p></header>`;
+      <p class="lede">Give each day a theme, then say what kind of work belongs there. When you add a task, Tackle puts it on the day it fits, by its project’s usual day or by matching its words to what you write here. You can always move it.</p></header>`;
     h += '<div class="days rhythm">';
     for (const d of ALLDAYS) {
       const r = S.rhythm[d], th = THEMES[d], isOpen = !!open[d], off = r.key === 'off';
