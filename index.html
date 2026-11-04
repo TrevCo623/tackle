@@ -512,7 +512,8 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 .task-page { gap: 30px !important; padding-bottom: 12px; }
 .task-head { display: flex; flex-direction: column; gap: 10px; }
 .task-title { font-size: 32px; line-height: 1.02; overflow-wrap: anywhere; }
-.rename { align-self: flex-start; min-height: 32px; font-size: 13px; }
+.rename { align-self: flex-start; min-height: 28px; font-size: 12px; margin-top: -4px; }
+.seg button svg { width: 15px; height: 15px; margin-right: 6px; vertical-align: -2px; }
 .title-input {
   width: 100%; border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; background: transparent; padding: 4px 0 8px;
   font-family: var(--display); font-size: 30px; line-height: 1.05; text-transform: uppercase; color: var(--ink); resize: none;
@@ -1158,7 +1159,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     root.innerHTML = `<button type="button" class="scrim" data-act="close-sheet" aria-label="Close" tabindex="-1"></button>
       <div class="sheet${sheet.kind === 'task' ? ' is-page' : ''}" role="dialog" aria-modal="true" aria-labelledby="sheet-h">${sheet.kind === 'task' ? '' : '<span class="grab" aria-hidden="true"></span>'}${body}</div>`;
     root.hidden = false;
-    if (sheet.kind === 'status') bindSlider();
+    if (sheet.kind === 'status' || (sheet.kind === 'task' && sheet.mode === 'edit')) bindSlider();
   }
 
   function head(title) {
@@ -1189,8 +1190,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
           <button type="button" class="dd-opt dd-manage" data-act="projects"><span class="ptile sm dashed">${ICON.edit}</span><span>Manage projects</span></button></div>` : ''}
       </div></div>`;
     if (isEdit) {
-      h += '<div class="field-group"><p class="eyebrow">Status</p><div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))" role="group" aria-label="Status">' +
-        ['todo', 'doing', 'done'].map((k) => `<button type="button" data-act="d-status" data-val="${k}" aria-pressed="${D.status === k}">${STATUS[k]}</button>`).join('') + '</div></div>';
+      h += `<div class="field-group"><p class="eyebrow">Status</p>${sliderHTML(D.status)}</div>`;
     }
     if (!isEdit && !sheet.dayOpen) {
       h += `<p class="lands">${themeIcon(D.day)}<span>Lands on <strong>${FULL[D.day]}</strong> · ${esc(THEMES[D.day].name)}</span><button type="button" class="text-btn" data-act="day-open">Change</button></p>`;
@@ -1199,17 +1199,30 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       const on = D.day === d;
       return `<div class="day-opt${on ? ' is-on' : ''}">
         <button type="button" role="radio" aria-checked="${on}" class="day-pick-btn" data-act="d-day" data-val="${d}"><strong>${FULL[d]}</strong><span>${esc(THEMES[d].name)}</span></button>
-        ${on ? `<button type="button" class="repeat-btn${D.repeat ? ' is-on' : ''}" data-act="d-repeat" aria-pressed="${D.repeat}" aria-label="${D.repeat ? 'Repeats every ' + FULL[d] + '. Tap for one time' : 'One time. Tap to repeat every ' + FULL[d]}">${ICON.repeatL}${D.repeat ? '<span>Weekly</span>' : ''}</button>` : ''}
       </div>`;
     }).join('') + '</div>';
     if (isEdit && D.repeat && sheet.origDay !== D.day) h += `<p class="hint">Moves it to ${FULL[D.day]}s in your weekly plan.</p>`;
     h += '</div>';
     }
-    if (isEdit) h += `<div class="field-group"><label class="eyebrow" for="f-dep">Waiting on something</label><input class="field" id="f-dep" value="${esc(D.dep)}" autocomplete="off" placeholder="Feedback, files, a signature…">
-      <p class="hint">Anything here moves the task to “Waiting.”</p></div>`;
+
     h += `<div class="field-group"><label class="eyebrow" for="f-notes">Notes${isEdit ? '' : ' · optional'}</label><textarea class="area" id="f-notes" rows="4" placeholder="Links, details, what done looks like…">${esc(D.notes || '')}</textarea></div>`;
-    h += `<div class="sheet-actions"><button type="submit" class="primary">${isEdit ? 'Save' : 'Save'}</button>
-      ${isEdit ? '<button type="button" class="text-btn danger" data-act="delete">Delete task</button>' : ''}</div></form>`;
+    h += `<div class="field-group"><p class="eyebrow" id="rep-lbl">Repeats</p><div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))" role="group" aria-labelledby="rep-lbl">
+      <button type="button" data-act="d-repeat-set" data-val="0" aria-pressed="${!D.repeat}">One-time</button>
+      <button type="button" data-act="d-repeat-set" data-val="1" aria-pressed="${!!D.repeat}">${ICON.repeatL}Recurring</button></div>
+      ${D.repeat ? `<p class="hint">Comes back every ${FULL[D.day]}.</p>` : ''}</div>`;
+    if (isEdit) {
+      if (D.dep) {
+        h += `<div class="hold-card" role="status"><span class="hold-ico">${ICON.link}</span>
+          <p><span class="eyebrow">On hold</span><span>Waiting on: <b>${esc(D.dep)}</b></span></p>
+          <button type="button" class="ghost-btn small" data-act="d-hold-remove">Remove hold</button></div>`;
+      } else if (sheet.holdOpen) {
+        h += `<div class="hold-form"><label class="eyebrow" for="f-dep">Waiting on</label>
+          <input class="field" id="f-dep" value="${esc(sheet.depDraft || '')}" autocomplete="off" placeholder="Feedback, files, a signature…">
+          <div class="hold-btns"><button type="button" class="ghost-btn small" data-act="d-hold-cancel">Cancel</button></div>
+          <p class="hint">Saving puts it on hold.</p></div>`;
+      } else h += '<button type="button" class="text-btn hold-link" data-act="d-hold-open">Put on hold for dependency</button>';
+    }
+    h += `<div class="sheet-actions"><button type="submit" class="primary">Save</button></div></form>`;
     return h;
   }
 
@@ -1245,15 +1258,18 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   }
 
   const ORDER = ['todo', 'doing', 'done'];
+  const sliderHTML = (status) => {
+    const i = ORDER.indexOf(status);
+    return `<div class="slider" id="status-slider" role="slider" tabindex="0" aria-label="Status" aria-valuemin="0" aria-valuemax="2" aria-valuenow="${i}" aria-valuetext="${STATUS[status]}" style="--pos:${i}">
+        <span class="slider-stops" aria-hidden="true">${ORDER.map((k) => `<span><span class="stop-ico">${ICON[k === 'done' ? 'doneO' : k]}</span>${STATUS[k]}</span>`).join('')}</span>
+        <span class="slider-thumb st-${status}" aria-hidden="true"><span class="status-ico">${ICON[status === 'done' ? 'doneO' : status]}</span><span class="thumb-label">${STATUS[status]}</span></span>
+      </div>`;
+  };
   function statusSheet() {
     const t = byId(sheet.id);
     if (!t) return head('Task not found');
-    const i = ORDER.indexOf(t.status);
     let h = `<div class="sheet-head"><h2 id="sheet-h">${esc(t.label)}</h2><button type="button" class="icon-btn" data-act="close-sheet" aria-label="Close">${ICON.close}</button></div>
-      <div class="slider" id="status-slider" role="slider" tabindex="0" aria-label="Status" aria-valuemin="0" aria-valuemax="2" aria-valuenow="${i}" aria-valuetext="${STATUS[t.status]}" style="--pos:${i}">
-        <span class="slider-stops" aria-hidden="true">${ORDER.map((k) => `<span><span class="stop-ico">${ICON[k === 'done' ? 'doneO' : k]}</span>${STATUS[k]}</span>`).join('')}</span>
-        <span class="slider-thumb st-${t.status}" aria-hidden="true"><span class="status-ico">${ICON[t.status === 'done' ? 'doneO' : t.status]}</span><span class="thumb-label">${STATUS[t.status]}</span></span>
-      </div>`;
+      ${sliderHTML(t.status)}`;
     if (t.dep) {
       h += `<div class="hold-card" role="status"><span class="hold-ico">${ICON.link}</span>
         <p><span class="eyebrow">On hold</span><span>Waiting on: <b>${esc(t.dep)}</b></span></p>
@@ -1273,7 +1289,8 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   function bindSlider() {
     const el = $('#status-slider');
     if (!el) return;
-    const t = byId(sheet.id);
+    const onPage = sheet.kind === 'task';
+    const t = onPage ? sheet.draft : byId(sheet.id);
     const thumb = el.querySelector('.slider-thumb');
     let start = ORDER.indexOf(t.status), pos = start, down = false, moved = false, x0 = 0;
     const geo = () => { const r = el.getBoundingClientRect(); return { left: r.left + 4, step: (r.width - 8) / 3 }; };
@@ -1290,7 +1307,9 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       el.setAttribute('aria-valuenow', idx); el.setAttribute('aria-valuetext', STATUS[ORDER[idx]]);
       if (idx === start) return;
       try { navigator.vibrate && navigator.vibrate(12); } catch (e) {}
-      t.status = ORDER[idx]; save();
+      t.status = ORDER[idx];
+      if (onPage) { start = idx; return; }
+      save();
       const msg = idx === 2 ? 'Moved to Done' : idx === 1 ? 'Moved to In progress' : 'Moved back to To do';
       setTimeout(() => { if (sheet && sheet.kind === 'status') { closeSheet(); render(); toast(msg); } }, 420);
       start = idx;
@@ -1371,8 +1390,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 
   function openSheet(s) {
     sheet = s; renderSheet();
-    const first = $('#sheet input') || $('#sheet .primary');
-    if (first && s.kind === 'task' && s.mode === 'add') first.focus();
+    if (s.kind === 'task' && s.mode === 'add') { const f = $('#f-label'); if (f) f.focus(); }
   }
   function closeSheet() { sheet = null; renderSheet(); }
 
@@ -1431,7 +1449,8 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     const D = sheet.draft;
     const label = D.label.trim();
     if (!label) { sheet.error = 'Give the task a name.'; sheet.renaming = true; renderSheet(); $('#f-label').focus(); return; }
-    const clean = { label, tag: D.tag, day: D.day, status: D.status, dep: D.dep.trim(), repeat: D.repeat, notes: (D.notes || '').trim() };
+    const dep = (sheet.holdOpen && sheet.depDraft ? sheet.depDraft : D.dep || '').trim();
+    const clean = { label, tag: D.tag, day: D.day, status: D.status, dep, repeat: D.repeat, notes: (D.notes || '').trim() };
     if (sheet.mode === 'edit') {
       const t = byId(sheet.id);
       if (t.day !== clean.day) { t.home = null; learn(clean.tag, clean.day); }
@@ -1490,6 +1509,10 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       }
       case 'day-open': sheet.dayOpen = true; renderSheet(); return;
       case 'd-status': sheet.draft.status = val; renderSheet(); return;
+      case 'd-repeat-set': sheet.draft.repeat = val === '1'; renderSheet(); return;
+      case 'd-hold-open': sheet.holdOpen = true; renderSheet(); $('#f-dep').focus(); return;
+      case 'd-hold-cancel': sheet.holdOpen = false; sheet.depDraft = ''; renderSheet(); return;
+      case 'd-hold-remove': sheet.draft.dep = ''; renderSheet(); return;
       case 'd-day': sheet.draft.day = val; sheet.dayTouched = true; renderSheet(); return;
       case 'd-tag': sheet.draft.tag = val; sheet.projOpen = false; if (sheet.mode === 'add' && !sheet.dayTouched) sheet.draft.day = dayForProject(val); renderSheet(); return;
       case 'proj-toggle': sheet.projOpen = !sheet.projOpen; renderSheet(); return;
@@ -1601,7 +1624,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   document.addEventListener('input', (e) => {
     const el = e.target;
     if (el.id === 'f-label' && sheet) { sheet.draft.label = el.value; }
-    else if (el.id === 'f-dep' && sheet) { sheet.draft.dep = el.value; }
+    else if (el.id === 'f-dep' && sheet) { sheet.depDraft = el.value; }
     else if (el.id === 'p-name' && sheet) { sheet.draft.name = el.value; }
     else if (el.id === 'f-notes' && sheet) { sheet.draft.notes = el.value; }
     else if (el.id === 'f-hold' && sheet) { sheet.holdText = el.value; }
