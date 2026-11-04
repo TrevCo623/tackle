@@ -1,11 +1,11 @@
 // Tackle daily nudge. Called every 15 minutes by pg_cron; sends at each subscriber's chosen time (their time zone)
-// on the days their weekly rhythm has a theme. Days set to Off get nothing.
+// on the days their weekly rhythm has a theme. Days set to Free get nothing.
 // Secrets (Edge Functions → Secrets): VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, CRON_SECRET.
 // Add ?force=1 to send now (still needs the x-cron-secret header) for testing.
 import webpush from 'npm:web-push@3.6.7';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const PHRASE: Record<string, string> = {"plan": "planning the week", "client": "deep work", "wrap": "wrapping up", "meetings": "meetings and calls", "side": "your side hustle", "admin": "admin and errands", "home": "home and chores", "social": "seeing people", "health": "health and fitness", "learn": "learning something", "creative": "creative work", "reset": "resting and resetting", "deep": "deep work"};
+const PHRASE: Record<string, string> = {"plan": "planning the week", "client": "deep work", "wrap": "wrapping up", "meetings": "meetings and calls", "side": "your side hustle", "admin": "home and admin", "social": "seeing people", "health": "health and fitness", "learn": "learning and making things", "reset": "resting and resetting", "deep": "deep work", "home": "home and admin", "creative": "learning and making things"};
 const DEFAULT_RHYTHM: Record<string, string> = { Mon: 'plan', Tue: 'client', Wed: 'client', Thu: 'wrap', Fri: 'custom', Sat: 'off', Sun: 'off' };
 type Day = { key: string; name?: string };
 
@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     const phrase = theme.key === 'custom' ? (theme.name || '').toLowerCase() : PHRASE[theme.key] ?? RETIRED[theme.key];
     const payload = JSON.stringify({
       title: 'What do you want to tackle today?',
-      body: on && phrase ? `Today is for ${phrase}.` : 'Today is a day off.',
+      body: on && phrase ? `Today is for ${phrase}.` : 'Today is a free day.',
       url: './#today',
     });
     try {
