@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F7F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#191917" media="(prefers-color-scheme: dark)">
-<meta name="tackle-build" content="1793824127">
+<meta name="tackle-build" content="1793824318">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -1568,12 +1568,14 @@ a.proj-row { text-decoration: none; }
     if (APP && S.weekOf && new Date(S.weekOf + 'T00:00:00') > thisMonday()) return [];
     return S.tasks.filter((t) => !t.repeat && !t.next && t.status !== 'done' && WEEKDAYS.includes(t.day) && isPast(t.day));
   }
+  let staleShown = false;
   function maybeAskStale() {
     if (sheet || window.__tackleNoStale) return;
     const key = (S.weekOf || '') + ':' + S.simDay;
-    if (S.staleAsked === key) return;
+    // The real app asks once a day; the prototype asks on every load so it can be reviewed.
+    if (APP ? S.staleAsked === key : staleShown) return;
     const list = staleTasks();
-    S.staleAsked = key; save();
+    staleShown = true; if (APP) { S.staleAsked = key; save(); }
     if (list.length) openSheet({ kind: 'stale', ids: list.map((t) => t.id) });
   }
   // Next week starts fresh, so a project's usual day wins outright; otherwise Tackle's normal pick.
