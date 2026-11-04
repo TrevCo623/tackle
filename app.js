@@ -9,6 +9,25 @@
 
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
+  // An installed app on iOS resumes from memory instead of reloading, so it can sit on an old build.
+  // Whenever it comes back to the foreground, check the live build and reload if it changed,
+  // unless a sheet or form is open (so nothing being typed is lost).
+  const myBuild = (document.querySelector('meta[name="tackle-build"]') || {}).content;
+  const checkForUpdate = async () => {
+    if (!myBuild || document.visibilityState !== 'visible') return;
+    try {
+      const reg = 'serviceWorker' in navigator && await navigator.serviceWorker.getRegistration();
+      if (reg) reg.update().catch(() => {});
+      const html = await (await fetch('index.html', { cache: 'no-store' })).text();
+      const m = html.match(/name="tackle-build" content="(\d+)"/);
+      if (!m || m[1] === myBuild) return;
+      if (document.querySelector('[role="dialog"]') || (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName))) return;
+      location.reload();
+    } catch (e) { /* offline: keep what we have */ }
+  };
+  document.addEventListener('visibilitychange', checkForUpdate);
+  window.addEventListener('pageshow', checkForUpdate);
+
   if (!hasBackend) { A.user = null; return; } // No config yet: local-only on this device.
 
   const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
