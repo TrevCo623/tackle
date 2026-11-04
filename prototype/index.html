@@ -453,6 +453,19 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 .dd-check { display: inline-flex; color: var(--ink); }
 .dd-new { color: var(--text2); border-top: 1px solid var(--line); border-radius: 0 0 9px 9px; margin-top: 4px; }
 .ptile.dashed { background: transparent; border-style: dashed; }
+.dd-val.is-empty { color: var(--muted); }
+.dd-manage { color: var(--text2); }
+.dd-manage .ptile svg { width: 13px; height: 13px; }
+.lands { margin: 0; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: var(--surface); font-size: 15px; color: var(--text2); }
+.lands > span:not(.ticon) { flex: 1; min-width: 0; text-align: left; }
+.lands strong { color: var(--ink); font-weight: 600; }
+.lands .text-btn { min-height: 32px; align-self: center; }
+.proj-list { display: flex; flex-direction: column; border-top: 1px solid var(--line); margin-bottom: 14px; }
+.proj-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 8px 2px; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; color: var(--ink); }
+.proj-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.proj-text strong { font-size: 16px; font-weight: 600; }
+.proj-text small { font-size: 13px; color: var(--muted); }
+.proj-row .chev { display: inline-flex; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .dd-chev { transition: none; } }
 
 
@@ -685,6 +698,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     Fri: { key: 'own', short: 'Personal', name: 'Website + Personal', phrase: 'website and personal projects', color: 'var(--c-own)' }
   };
   const WRAP_DAY = 'Fri';
+  const LEGACY_HOME = { 'Client A': 'Tue', 'Client B': 'Tue', Business: 'Mon', Website: 'Fri', Writing: 'Fri', Personal: 'Fri' };
   const THEME_ICON = {"plan": "<rect x=\"5\" y=\"4.5\" width=\"14\" height=\"17\" rx=\"2.5\"/><rect x=\"9\" y=\"2.5\" width=\"6\" height=\"4\" rx=\"1.2\"/><path d=\"M9 13.5l2 2 4-4.5\"/>", "client": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"5\"/><circle cx=\"12\" cy=\"12\" r=\"1.1\" fill=\"currentColor\" stroke=\"none\"/>", "wrap": "<path d=\"M2 12.5l5 5L18 6.5\"/><path d=\"M13 16.5l1 1 8-8\"/>", "own": "<path d=\"M11 3c.7 4.4 2.6 6.3 7 7-4.4.7-6.3 2.6-7 7-.7-4.4-2.6-6.3-7-7 4.4-.7 6.3-2.6 7-7z\"/><path d=\"M18.5 15c.3 1.7 1 2.4 2.7 2.7-1.7.3-2.4 1-2.7 2.7-.3-1.7-1-2.4-2.7-2.7 1.7-.3 2.4-1 2.7-2.7z\"/>"};
   const themeIcon = (d, size) => `<span class="ticon" role="img" aria-label="${esc(THEMES[d].name)}"><svg aria-hidden="true" width="${size || 18}" height="${size || 18}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${THEME_ICON[THEMES[d].key]}</svg></span>`;
 
@@ -710,7 +724,8 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   };
   const picon = (key, size) => `<svg aria-hidden="true" width="${size || 17}" height="${size || 17}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${PICON[key] || PICON.flag}</svg>`;
   const projectOf = (name) => S.projects.find((p) => p.name === name) || { name, icon: 'flag' };
-  const tile = (name, sm) => `<span class="ptile${sm ? ' sm' : ''}" role="img" aria-label="Project: ${esc(name)}" title="${esc(name)}">${picon(projectOf(name).icon)}</span>`;
+  const tile = (name, sm) => name ? `<span class="ptile${sm ? ' sm' : ''}" role="img" aria-label="Project: ${esc(name)}" title="${esc(name)}">${picon(projectOf(name).icon)}</span>`
+    : `<span class="ptile${sm ? ' sm' : ''} dashed" role="img" aria-label="No project"></span>`;
   const STATUS = { todo: 'To do', doing: 'In progress', done: 'Done' };
   const NEXT = { todo: 'doing', doing: 'done', done: 'todo' };
   const ICON = {
@@ -794,12 +809,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   function freshState() {
     return {
       tasks: [],
-      projects: [
-        { name: 'Business', icon: 'chart' },
-        { name: 'Website', icon: 'globe' },
-        { name: 'Writing', icon: 'pen' },
-        { name: 'Personal', icon: 'home' }
-      ],
+      projects: [],
       simDay: realDay(), weekOf: isoDay(thisMonday()),
       filters: { today: 'All', week: 'All' },
       starred: null, notes: { proud: '', better: '', next: '' }, carry: {},
@@ -838,6 +848,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 
   let S = load() || seed();
   S.carry = S.carry || {}; S.wrapStep = S.wrapStep || 1;
+  S.projects.forEach((p) => { if (p.day === undefined) p.day = LEGACY_HOME[p.name] || null; });
   if (APP) { S.simDay = realDay(); rollWeek(); }
   let sheet = null;      // { kind: 'task'|'move'|'plan', ... }
   let lastDeleted = null;
@@ -857,7 +868,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       ).join('') + '</div>';
   }
 
-  const projGlyph = (name) => `<span class="pglyph" role="img" aria-label="Project: ${esc(name)}" title="${esc(name)}">${picon(projectOf(name).icon, 13)}</span>`;
+  const projGlyph = (name) => !name ? '' : `<span class="pglyph" role="img" aria-label="Project: ${esc(name)}" title="${esc(name)}">${picon(projectOf(name).icon, 13)}</span>`;
   const moreBtn = (t) => `<button type="button" class="more" data-act="menu" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button>`;
 
   function row(t, cls) {
@@ -992,13 +1003,22 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     return h;
   }
 
-  // Each project has a home day (its "type"). Seeded projects map to the day theme they belong to;
-  // a new project takes the day it was created on. Unknown: stay on the current day.
-  const PROJECT_HOME = { 'Client A': 'Tue', 'Client B': 'Tue', Business: 'Mon', Website: 'Fri', Writing: 'Fri', Personal: 'Fri' };
-  function suggestDay(t) {
-    const p = S.projects.find((x) => x.name === t.tag);
-    return (p && p.day) || PROJECT_HOME[t.tag] || t.day;
+  // Day picking: a project's tasks go to the day you last put them on (learned from moves and edits).
+  // A theme that spans days (Client: Tue + Wed) picks the lighter one. New projects and no project: Monday.
+  const openOn = (d) => S.tasks.filter((t) => t.day === d && t.status !== 'done').length;
+  const ahead = (d) => { const i = ALLDAYS.indexOf(S.simDay); return (ALLDAYS.indexOf(d) - (i > 4 ? 0 : i) + 7) % 7; };
+  function dayForProject(tag) {
+    const p = tag && S.projects.find((x) => x.name === tag);
+    const base = (p && p.day) || 'Mon';
+    const twins = WEEKDAYS.filter((d) => THEMES[d].key === THEMES[base].key);
+    if (!p || twins.length < 2) return base;
+    return twins.slice().sort((a, b) => openOn(a) - openOn(b) || ahead(a) - ahead(b))[0];
   }
+  function learn(tag, day) {
+    const p = tag && S.projects.find((x) => x.name === tag);
+    if (p && THEMES[day]) p.day = day;
+  }
+  function suggestDay(t) { return t.tag ? dayForProject(t.tag) : t.day; }
   const carryOf = (t) => (S.carry[t.id] = S.carry[t.id] || {});
   const carryDay = (t) => carryOf(t).day || suggestDay(t);
   const looseTasks = () => S.tasks.filter((t) => !t.repeat && t.status !== 'done');
@@ -1125,6 +1145,8 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     else if (sheet.kind === 'status') body = statusSheet();
     else if (sheet.kind === 'confirm-remove') body = confirmRemoveSheet();
     else if (sheet.kind === 'project') body = projectSheet();
+    else if (sheet.kind === 'projects') body = projectsSheet();
+    else if (sheet.kind === 'confirm-project') body = confirmProjectSheet();
     else if (sheet.kind === 'account') body = APP.accountSheet(head, esc);
     else body = planSheet();
     root.innerHTML = `<button type="button" class="scrim" data-act="close-sheet" aria-label="Close" tabindex="-1"></button>
@@ -1150,19 +1172,23 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     }
     if (sheet.error) h += `<p class="error">${sheet.error}</p>`;
     h += '</header>';
-    const cur = projectOf(D.tag);
-    h += `<div class="field-group"><p class="eyebrow" id="proj-lbl">Project</p>
+    h += `<div class="field-group"><p class="eyebrow" id="proj-lbl">Project${isEdit ? '' : ' · optional'}</p>
       <div class="dd">
         <button type="button" class="dd-btn" data-act="proj-toggle" aria-haspopup="listbox" aria-expanded="${!!sheet.projOpen}" aria-labelledby="proj-lbl proj-cur">
-          <span class="ptile">${picon(cur.icon)}</span><span id="proj-cur" class="dd-val">${esc(cur.name)}</span><span class="dd-chev">${ICON.chev}</span></button>
-        ${sheet.projOpen ? `<div class="dd-list" role="listbox" aria-labelledby="proj-lbl">${S.projects.map((p) =>
+          ${tile(D.tag)}<span id="proj-cur" class="dd-val${D.tag ? '' : ' is-empty'}">${D.tag ? esc(D.tag) : 'No project'}</span><span class="dd-chev">${ICON.chev}</span></button>
+        ${sheet.projOpen ? `<div class="dd-list" role="listbox" aria-labelledby="proj-lbl">
+          <button type="button" role="option" class="dd-opt" data-act="d-tag" data-val="" aria-selected="${!D.tag}"><span class="ptile sm dashed"></span><span>No project</span>${!D.tag ? `<span class="dd-check">${ICON.tick}</span>` : ''}</button>${S.projects.map((p) =>
           `<button type="button" role="option" class="dd-opt" data-act="d-tag" data-val="${esc(p.name)}" aria-selected="${D.tag === p.name}"><span class="ptile sm">${picon(p.icon, 14)}</span><span>${esc(p.name)}</span>${D.tag === p.name ? `<span class="dd-check">${ICON.tick}</span>` : ''}</button>`).join('')}
-          <button type="button" class="dd-opt dd-new" data-act="new-project"><span class="ptile sm dashed"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span>New project</span></button></div>` : ''}
+          <button type="button" class="dd-opt dd-new" data-act="new-project"><span class="ptile sm dashed"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span>New project</span></button>
+          <button type="button" class="dd-opt dd-manage" data-act="projects"><span class="ptile sm dashed">${ICON.edit}</span><span>Manage projects</span></button></div>` : ''}
       </div></div>`;
     if (isEdit) {
       h += '<div class="field-group"><p class="eyebrow">Status</p><div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))" role="group" aria-label="Status">' +
         ['todo', 'doing', 'done'].map((k) => `<button type="button" data-act="d-status" data-val="${k}" aria-pressed="${D.status === k}">${STATUS[k]}</button>`).join('') + '</div></div>';
     }
+    if (!isEdit && !sheet.dayOpen) {
+      h += `<p class="lands">${themeIcon(D.day)}<span>Lands on <strong>${FULL[D.day]}</strong> · ${esc(THEMES[D.day].name)}</span><button type="button" class="text-btn" data-act="day-open">Change</button></p>`;
+    } else {
     h += '<div class="field-group"><p class="eyebrow" id="day-lbl">Day</p><div class="day-list" role="radiogroup" aria-labelledby="day-lbl">' + WEEKDAYS.map((d) => {
       const on = D.day === d;
       return `<div class="day-opt${on ? ' is-on' : ''}">
@@ -1172,10 +1198,11 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     }).join('') + '</div>';
     if (isEdit && D.repeat && sheet.origDay !== D.day) h += `<p class="hint">Moves it to ${FULL[D.day]}s in your weekly plan.</p>`;
     h += '</div>';
-    h += `<div class="field-group"><label class="eyebrow" for="f-dep">Waiting on something</label><input class="field" id="f-dep" value="${esc(D.dep)}" autocomplete="off" placeholder="Feedback, files, a signature…">
+    }
+    if (isEdit) h += `<div class="field-group"><label class="eyebrow" for="f-dep">Waiting on something</label><input class="field" id="f-dep" value="${esc(D.dep)}" autocomplete="off" placeholder="Feedback, files, a signature…">
       <p class="hint">Anything here moves the task to “Waiting.”</p></div>`;
-    h += `<div class="field-group"><label class="eyebrow" for="f-notes">Notes</label><textarea class="area" id="f-notes" rows="4" placeholder="Links, details, what done looks like…">${esc(D.notes || '')}</textarea></div>`;
-    h += `<div class="sheet-actions"><button type="submit" class="primary">${isEdit ? 'Save' : 'Add task'}</button>
+    h += `<div class="field-group"><label class="eyebrow" for="f-notes">Notes${isEdit ? '' : ' · optional'}</label><textarea class="area" id="f-notes" rows="4" placeholder="Links, details, what done looks like…">${esc(D.notes || '')}</textarea></div>`;
+    h += `<div class="sheet-actions"><button type="submit" class="primary">${isEdit ? 'Save' : 'Save'}</button>
       ${isEdit ? '<button type="button" class="text-btn danger" data-act="delete">Delete task</button>' : ''}</div></form>`;
     return h;
   }
@@ -1287,15 +1314,43 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
         <button type="button" class="danger-btn" data-act="carry-remove">Remove</button></div>`;
   }
 
+  function projectsSheet() {
+    let h = (sheet.back ? `<div class="sheet-head"><div class="preview-chip"><button type="button" class="back-btn" data-act="sheet-back" aria-label="Back">${ICON.back}</button><h2 id="sheet-h">Projects</h2></div><button type="button" class="icon-btn" data-act="close-sheet" aria-label="Close">${ICON.close}</button></div>` : head('Projects'));
+    h += '<div class="proj-list">';
+    if (!S.projects.length) h += '<p class="quiet-note">No projects yet. Tasks don’t need one.</p>';
+    h += S.projects.map((p, i) => {
+      const n = S.tasks.filter((t) => t.tag === p.name).length;
+      return `<button type="button" class="proj-row" data-act="project-edit" data-val="${i}">${tile(p.name)}<span class="proj-text"><strong>${esc(p.name)}</strong><small>${p.day ? 'Usually ' + FULL[p.day] : 'No usual day yet'} · ${n} ${n === 1 ? 'task' : 'tasks'}</small></span><span class="chev">${ICON.chev}</span></button>`;
+    }).join('');
+    h += '</div><button type="button" class="ghost-btn" data-act="project-new">New project</button>';
+    return h;
+  }
+
+  // Keep an open task draft in step with a renamed or deleted project.
+  function retagDrafts(start, from, to) {
+    for (let x = start; x; x = x.back) if (x.kind === 'task' && x.draft && x.draft.tag === from) x.draft.tag = to;
+  }
+
+  function confirmProjectSheet() {
+    const p = S.projects[sheet.index];
+    const n = S.tasks.filter((t) => t.tag === p.name).length;
+    return head('Delete ' + esc(p.name) + '?') + `<div class="remove-task">${tile(p.name)}<span>${esc(p.name)}</span></div>
+      <p class="hint">${n ? `Its ${n} ${n === 1 ? 'task stays' : 'tasks stay'} where they are, with no project.` : 'It has no tasks.'}</p>
+      <div class="confirm-btns"><button type="button" class="ghost-btn" data-act="project-keep">Keep it</button>
+        <button type="button" class="danger-btn" data-act="project-delete">Delete</button></div>`;
+  }
+
   function projectSheet() {
-    const P = sheet.draft;
-    let h = head('New project') + '<form id="project-form" novalidate>';
+    const P = sheet.draft, isEdit = sheet.index != null;
+    let h = head(isEdit ? 'Edit project' : 'New project') + '<form id="project-form" novalidate>';
     h += `<div class="field-group"><label for="p-name">Name</label><input class="field" id="p-name" value="${esc(P.name)}" autocomplete="off" placeholder="Client C, Garden, Portfolio…">
       ${sheet.error ? `<p class="error">${sheet.error}</p>` : ''}</div>`;
     h += '<div class="field-group"><p class="eyebrow">Icon</p><div class="icon-grid" role="group" aria-label="Icon">' +
       Object.keys(PICON).map((k) => `<button type="button" data-act="p-icon" data-val="${k}" aria-pressed="${P.icon === k}" aria-label="${k}">${picon(k, 22)}</button>`).join('') + '</div></div>';
-    h += `<div class="sheet-actions"><button type="submit" class="primary">Create project</button>
-      <button type="button" class="text-btn" data-act="project-cancel">Back to task</button></div></form>`;
+    if (isEdit) h += `<p class="hint">${P.day ? `Its new tasks go to ${FULL[P.day]}.` : 'Its new tasks go to Monday until you move one.'} Move one of its tasks to another day and new ones follow.</p>`;
+    h += `<div class="sheet-actions"><button type="submit" class="primary">${isEdit ? 'Save' : 'Create project'}</button>
+      ${isEdit ? '<button type="button" class="text-btn danger" data-act="project-del-ask">Delete project</button>' : ''}
+      ${sheet.back ? `<button type="button" class="text-btn" data-act="project-cancel">${sheet.back.kind === 'task' ? 'Back to task' : 'Back'}</button>` : ''}</div></form>`;
     return h;
   }
 
@@ -1373,10 +1428,11 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     const clean = { label, tag: D.tag, day: D.day, status: D.status, dep: D.dep.trim(), repeat: D.repeat, notes: (D.notes || '').trim() };
     if (sheet.mode === 'edit') {
       const t = byId(sheet.id);
-      if (t.day !== clean.day) t.home = null;
+      if (t.day !== clean.day) { t.home = null; learn(clean.tag, clean.day); }
       Object.assign(t, clean);
       toast('Saved');
     } else {
+      if (sheet.dayTouched) learn(clean.tag, clean.day);
       S.tasks.push(Object.assign({ id: nid(), home: null }, clean));
       toast('Added to ' + FULL[clean.day]);
     }
@@ -1387,7 +1443,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     const t = byId(sheet.id), to = sheet.to;
     let msg;
     if (sheet.plan && !t.repeat) {
-      carryOf(t).day = to;
+      carryOf(t).day = to; learn(t.tag, to);
       save(); closeSheet(); render(); toast(`${t.label} moves to ${FULL[to]} next week`); return;
     }
     if (sheet.plan) sheet.scope = 'every';
@@ -1401,6 +1457,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
         msg = `Plan updated: ${t.label} every ${FULL[to]}`;
       }
     } else msg = `${t.label} moved to ${FULL[to]}`;
+    if (!t.repeat || sheet.scope !== 'week') learn(t.tag, to);
     t.day = to;
     save(); closeSheet(); render(); toast(msg);
   }
@@ -1421,13 +1478,14 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       case 'set-status': { const m = byId(sheet.id); m.status = val; closeSheet(); toast(m.status === 'done' ? 'Marked done' : m.status === 'doing' ? 'In progress' : 'Back to to do'); break; }
       case 'edit': openSheet({ kind: 'task', mode: 'edit', id, origDay: t.day, draft: { label: t.label, tag: t.tag, day: t.day, status: t.status, dep: t.dep, repeat: t.repeat, notes: t.notes || '' } }); return;
       case 'add': case 'plan-add': {
-        const day = THEMES[S.simDay] ? S.simDay : 'Mon';
-        const tag = S.filters.today !== 'All' ? S.filters.today : 'Business';
-        openSheet({ kind: 'task', mode: 'add', draft: { label: '', tag, day, status: 'todo', dep: '', repeat: false } }); return;
+        const f = S.filters[view() === 'week' ? 'week' : 'today'];
+        const tag = f && f !== 'All' && S.projects.some((p) => p.name === f) ? f : '';
+        openSheet({ kind: 'task', mode: 'add', draft: { label: '', tag, day: dayForProject(tag), status: 'todo', dep: '', repeat: false, notes: '' } }); $('#f-label').focus(); return;
       }
+      case 'day-open': sheet.dayOpen = true; renderSheet(); return;
       case 'd-status': sheet.draft.status = val; renderSheet(); return;
-      case 'd-day': sheet.draft.day = val; renderSheet(); return;
-      case 'd-tag': sheet.draft.tag = val; sheet.projOpen = false; renderSheet(); return;
+      case 'd-day': sheet.draft.day = val; sheet.dayTouched = true; renderSheet(); return;
+      case 'd-tag': sheet.draft.tag = val; sheet.projOpen = false; if (sheet.mode === 'add' && !sheet.dayTouched) sheet.draft.day = dayForProject(val); renderSheet(); return;
       case 'proj-toggle': sheet.projOpen = !sheet.projOpen; renderSheet(); return;
       case 'd-repeat': sheet.draft.repeat = !sheet.draft.repeat; renderSheet(); return;
       case 'rename': sheet.renaming = true; renderSheet(); { const i = $('#f-label'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); } return;
@@ -1453,6 +1511,21 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
         S.tasks.splice(i, 1); save(); closeSheet(); render(); toast('Task deleted', true); return;
       }
       case 'new-project': openSheet({ kind: 'project', back: sheet, draft: { name: '', icon: 'flag' } }); $('#p-name').focus(); return;
+      case 'projects': openSheet({ kind: 'projects', back: sheet && sheet.kind === 'task' ? sheet : (sheet && sheet.kind === 'account' ? sheet : null) }); return;
+      case 'sheet-back': openSheet(sheet.back); return;
+      case 'project-new': openSheet({ kind: 'project', back: sheet, draft: { name: '', icon: 'flag' } }); $('#p-name').focus(); return;
+      case 'project-edit': { const p = S.projects[+val]; openSheet({ kind: 'project', index: +val, back: sheet, draft: { name: p.name, icon: p.icon, day: p.day } }); return; }
+      case 'project-del-ask': openSheet({ kind: 'confirm-project', index: sheet.index, back: sheet.back }); return;
+      case 'project-keep': openSheet({ kind: 'projects', back: sheet.back && sheet.back.back }); return;
+      case 'project-delete': {
+        const p = S.projects[sheet.index];
+        S.tasks.forEach((t) => { if (t.tag === p.name) t.tag = ''; });
+        retagDrafts(sheet, p.name, '');
+        ['today', 'week'].forEach((k) => { if (S.filters[k] === p.name) S.filters[k] = 'All'; });
+        S.projects.splice(sheet.index, 1);
+        const back = sheet.back && sheet.back.kind === 'projects' ? sheet.back : { kind: 'projects', back: null };
+        openSheet(back); toast(p.name + ' deleted'); break;
+      }
       case 'p-icon': sheet.draft.icon = val; renderSheet(); return;
       case 'project-cancel': openSheet(sheet.back); return;
       case 'close-sheet': closeSheet(); return;
@@ -1500,12 +1573,22 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   function commitProject() {
     const P = sheet.draft, name = P.name.trim();
     if (!name) { sheet.error = 'Give the project a name.'; renderSheet(); $('#p-name').focus(); return; }
-    if (S.projects.some((p) => p.name.toLowerCase() === name.toLowerCase())) { sheet.error = 'You already have a project called ' + name + '.'; renderSheet(); $('#p-name').focus(); return; }
-    S.projects.push({ name, icon: P.icon, day: (sheet.back && sheet.back.draft && sheet.back.draft.day) || 'Mon' });
+    if (S.projects.some((p, i) => i !== sheet.index && p.name.toLowerCase() === name.toLowerCase())) { sheet.error = 'You already have a project called ' + name + '.'; renderSheet(); $('#p-name').focus(); return; }
+    if (sheet.index != null) {
+      const p = S.projects[sheet.index], old = p.name;
+      p.name = name; p.icon = P.icon;
+      if (old !== name) {
+        S.tasks.forEach((t) => { if (t.tag === old) t.tag = name; });
+        retagDrafts(sheet, old, name);
+        ['today', 'week'].forEach((k) => { if (S.filters[k] === old) S.filters[k] = name; });
+      }
+      save(); openSheet(sheet.back || { kind: 'projects' }); render(); toast('Project saved'); return;
+    }
+    S.projects.push({ name, icon: P.icon, day: null });
     save();
     const back = sheet.back;
-    back.draft.tag = name; back.projOpen = false;
-    openSheet(back);
+    if (back && back.kind === 'task') { back.draft.tag = name; back.projOpen = false; if (back.mode === 'add' && !back.dayTouched) back.draft.day = dayForProject(name); }
+    openSheet(back || { kind: 'projects' }); render();
     toast('Project created');
   }
 
@@ -1521,7 +1604,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 
   document.addEventListener('change', (e) => {
     const el = e.target;
-    if (el.dataset && el.dataset.carry) { const t = byId(el.dataset.carry); if (t) { carryOf(t).day = el.value; save(); render(); } }
+    if (el.dataset && el.dataset.carry) { const t = byId(el.dataset.carry); if (t) { carryOf(t).day = el.value; learn(t.tag, el.value); save(); render(); } }
     if (el.id === 'nudge-time' && APP) { S.nudgeTime = el.value; save(); APP.setNudgeTime(el.value); }
   });
 
@@ -1598,11 +1681,12 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     const t = byId(d.id), to = d.zone.dataset.zone;
     let msg = '';
     if (d.ctx === 'plan' && !t.repeat) {
-      if (carryDay(t) !== to) { carryOf(t).day = to; msg = `${t.label} moves to ${FULL[to]} next week`; }
+      if (carryDay(t) !== to) { carryOf(t).day = to; learn(t.tag, to); msg = `${t.label} moves to ${FULL[to]} next week`; }
     } else if (t.day !== to) {
       if (d.ctx === 'plan') { t.home = null; msg = `Plan updated: ${t.label} every ${FULL[to]}`; }
       else if (t.repeat) { t.home = t.home || t.day; if (t.home === to) t.home = null; msg = `${t.label} moved to ${FULL[to]}, this week only`; }
-      else msg = `${t.label} moved to ${FULL[to]}`;
+      else { msg = `${t.label} moved to ${FULL[to]}`; learn(t.tag, to); }
+      if (d.ctx === 'plan') learn(t.tag, to);
       t.day = to;
     }
     if (d.target) {

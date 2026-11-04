@@ -141,6 +141,7 @@
     const on = !!pushSub;
     return head('Account') + `
       <div class="acct-row"><p><strong>${esc(u.name || 'Signed in')}</strong><small>${esc(u.email || '')}</small></p></div>
+      <button type="button" class="proj-row" data-act="projects"><span class="proj-text"><strong>Projects</strong><small>Rename, change icons, delete</small></span><span class="chev" aria-hidden="true">›</span></button>
       <div class="acct-row"><p><strong id="nudge-l">Daily nudge</strong><small>${esc(hint)}</small></p>
         <button type="button" class="switch" role="switch" aria-checked="${on}" aria-labelledby="nudge-l" data-act="nudge-toggle"${blocked ? ' disabled' : ''}></button></div>
       ${on ? `<div class="acct-row sub"><p><strong>Time</strong><small>Weekdays, your time zone.</small></p>
