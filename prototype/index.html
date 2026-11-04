@@ -478,10 +478,15 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 .rhythm .day.is-off .day-name small { color: var(--muted); }
 .rh-sum { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
 .rh-body { gap: 16px; padding-top: 4px; }
-.rh-select { position: relative; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--line2); background: var(--card); }
-.rh-select select { position: absolute; inset: 0; opacity: 0; width: 100%; font-size: 16px; cursor: pointer; }
+.rh-select { position: relative; width: 100%; color: var(--ink); font: inherit; text-align: left; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--line2); background: var(--card); }
 .rh-select .dd-chev { margin-left: auto; transform: rotate(90deg); }
 .rh-val { font-size: 16px; }
+.theme-list { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.theme-opt { display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 10px 4px; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; color: var(--ink); }
+.theme-opt[aria-pressed="true"] { background: var(--surface); border-radius: 12px; border-bottom-color: transparent; padding-inline: 10px; }
+.theme-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.theme-text strong { font-size: 16px; font-weight: 600; }
+.theme-text small { font-size: 13px; color: var(--muted); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
 .next-link { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 44px; font-size: 14px; color: var(--text2); text-decoration: none; }
 .next-link svg { width: 14px; height: 14px; }
 @media (prefers-reduced-motion: reduce) { .dd-chev { transition: none; } }
@@ -714,10 +719,11 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   const ALLDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const FULL = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
   // Weekly rhythm: a theme per day (7 days; Sat/Sun start Off). THEMES and WEEKDAYS are derived from S.rhythm.
-  const THEME_LIB = [{"key": "plan", "name": "Plan + Set Up", "short": "Planning", "phrase": "planning the week", "desc": "Plan the week, clear the inbox, schedule, send invoices, set up anything new."}, {"key": "client", "name": "Client Work", "short": "Client", "phrase": "client work", "desc": "Heads-down work for clients: design, build, write, revise. Client calls and feedback rounds."}, {"key": "wrap", "name": "Wrap Up", "short": "Wrap up", "phrase": "wrapping up", "desc": "Send updates, deliver files, close loops, tidy notes and folders before the week ends."}, {"key": "own", "name": "Website + Personal", "short": "Personal", "phrase": "website and personal projects", "desc": "Your website, portfolio, writing and personal projects."}, {"key": "deep", "name": "Deep Work", "short": "Deep work", "phrase": "deep work", "desc": "Long, focused work with no meetings: strategy, writing, building, studying."}, {"key": "meetings", "name": "Meetings + Calls", "short": "Meetings", "phrase": "meetings and calls", "desc": "1:1s, team meetings, check-ins, interviews and calls you can batch into one day."}, {"key": "job", "name": "Day Job", "short": "Day job", "phrase": "your day job", "desc": "Work for your main job: projects, reports, emails, prep for meetings."}, {"key": "side", "name": "Side Hustle", "short": "Side hustle", "phrase": "your side hustle", "desc": "Orders, content, customer emails, product and marketing work for your side business."}, {"key": "second", "name": "Second Job", "short": "Second job", "phrase": "your second job", "desc": "Shifts, prep and follow-ups for your other job or gig."}, {"key": "admin", "name": "Admin + Errands", "short": "Admin", "phrase": "admin and errands", "desc": "Bills, paperwork, forms, returns, appointments to book, emails you’ve been putting off."}, {"key": "home", "name": "Home + Chores", "short": "Home", "phrase": "home and chores", "desc": "Cleaning, laundry, groceries, repairs, meal prep, things around the house."}, {"key": "family", "name": "Family + Kids", "short": "Family", "phrase": "family time", "desc": "School forms and emails, pickups, activities, kids’ appointments, family plans."}, {"key": "social", "name": "Social Life", "short": "Social", "phrase": "seeing people", "desc": "Dinners, birthdays, RSVPs, gifts, plans with friends, catching up with people."}, {"key": "health", "name": "Health + Fitness", "short": "Health", "phrase": "health and fitness", "desc": "Workouts, doctor and dentist appointments, prescriptions, meal planning."}, {"key": "money", "name": "Money", "short": "Money", "phrase": "money matters", "desc": "Budget, bills, taxes, savings, investments, cancelling subscriptions."}, {"key": "learn", "name": "Learning", "short": "Learning", "phrase": "learning something", "desc": "Courses, reading, practice, classes, certifications."}, {"key": "creative", "name": "Creative Time", "short": "Creative", "phrase": "creative work", "desc": "Writing, music, art, photography, making things just for you."}, {"key": "reset", "name": "Rest + Reset", "short": "Reset", "phrase": "resting and resetting", "desc": "Light tasks only: tidy up, plan meals, get ready for the week ahead."}];
+  const THEME_LIB = [{"key": "plan", "name": "Plan & Set Up", "short": "Planning", "phrase": "planning the week", "desc": "Plan the week, clear the inbox, schedule, send invoices, set up anything new."}, {"key": "client", "name": "Work", "short": "Work", "phrase": "work", "desc": "Heads-down work: projects, deliverables, client or team calls, feedback rounds."}, {"key": "wrap", "name": "Wrap Up", "short": "Wrap up", "phrase": "wrapping up", "desc": "Send updates, deliver files, close loops, tidy notes and folders before the week ends."}, {"key": "deep", "name": "Deep Focus", "short": "Focus", "phrase": "deep focus", "desc": "Long, focused work with no meetings: strategy, writing, building, studying."}, {"key": "meetings", "name": "Meetings & Calls", "short": "Meetings", "phrase": "meetings and calls", "desc": "1:1s, team meetings, check-ins, interviews and calls you can batch into one day."}, {"key": "side", "name": "Side Hustle", "short": "Side hustle", "phrase": "your side hustle", "desc": "Orders, content, customer emails, product and marketing work for your side business."}, {"key": "admin", "name": "Admin & Errands", "short": "Admin", "phrase": "admin and errands", "desc": "Bills, paperwork, forms, returns, appointments to book, emails you’ve been putting off."}, {"key": "home", "name": "Home & Chores", "short": "Home", "phrase": "home and chores", "desc": "Cleaning, laundry, groceries, repairs, meal prep, things around the house."}, {"key": "social", "name": "Social Life", "short": "Social", "phrase": "seeing people", "desc": "Dinners, birthdays, RSVPs, gifts, plans with friends, catching up with people."}, {"key": "health", "name": "Health & Fitness", "short": "Health", "phrase": "health and fitness", "desc": "Workouts, doctor and dentist appointments, prescriptions, meal planning."}, {"key": "learn", "name": "Learning", "short": "Learning", "phrase": "learning something", "desc": "Courses, reading, practice, classes, certifications."}, {"key": "creative", "name": "Creative Time", "short": "Creative", "phrase": "creative work", "desc": "Writing, music, art, photography, making things just for you."}, {"key": "reset", "name": "Rest & Reset", "short": "Reset", "phrase": "resting and resetting", "desc": "Light tasks only: tidy up, plan meals, get ready for the week ahead."}];
   const libTheme = (key) => THEME_LIB.find((x) => x.key === key);
+  const RETIRED = {"own": {"name": "Website & Personal", "desc": "Your website, portfolio, writing and personal projects."}, "money": {"name": "Money", "desc": "Budget, bills, taxes, savings, investments, cancelling subscriptions."}, "second": {"name": "Second Job", "desc": "Shifts, prep and follow-ups for your other job or gig."}, "family": {"name": "Family & Kids", "desc": "School forms and emails, pickups, activities, kids’ appointments, family plans."}, "job": {"name": "Day Job", "desc": "Work for your main job: projects, reports, emails, prep for meetings."}}; // themes removed from the library become the person's own
   const DEFAULT_RHYTHM = {
-    Mon: { key: 'plan' }, Tue: { key: 'client' }, Wed: { key: 'client' }, Thu: { key: 'wrap' }, Fri: { key: 'own' },
+    Mon: { key: 'plan' }, Tue: { key: 'client' }, Wed: { key: 'client' }, Thu: { key: 'wrap' }, Fri: { key: 'custom', name: 'Website & Personal', desc: 'Your website, portfolio, writing and personal projects.' },
     Sat: { key: 'off' }, Sun: { key: 'off' }
   };
   const THEMES = {};
@@ -725,6 +731,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     const out = {};
     ALLDAYS.forEach((d) => {
       const x = Object.assign({}, (r && r[d]) || DEFAULT_RHYTHM[d]);
+      if (RETIRED[x.key]) { const o = RETIRED[x.key]; x.key = 'custom'; x.name = x.name || o.name; if (x.desc == null) x.desc = o.desc; }
       const lib = libTheme(x.key);
       if (x.desc == null) x.desc = lib ? lib.desc : '';
       if (x.key === 'custom' && !x.name) x.name = '';
@@ -1069,11 +1076,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
       if (isOpen) {
         h += `<div id="rh-${d}" class="day-body rh-body">
           <div class="field-group"><label class="eyebrow" for="rh-theme-${d}">Theme</label>
-            <label class="rh-select">${off ? keyIcon('off', 'Off') : keyIcon(th.key, th.name)}<span class="rh-val">${esc(r.key === 'custom' ? 'Your own theme' : label)}</span><select id="rh-theme-${d}" data-rh-theme="${d}">
-              <option value="off"${off ? ' selected' : ''}>Off</option>
-              ${THEME_LIB.map((x) => `<option value="${x.key}"${r.key === x.key ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}
-              <option value="custom"${r.key === 'custom' ? ' selected' : ''}>Your own theme…</option>
-            </select><span class="dd-chev">${ICON.chev}</span></label></div>`;
+            <button type="button" class="rh-select" id="rh-theme-${d}" data-act="rh-pick" data-val="${d}" aria-haspopup="dialog">${off ? keyIcon('off', 'Off') : keyIcon(th.key, th.name)}<span class="rh-val">${esc(r.key === 'custom' ? 'Your own theme' : label)}</span><span class="dd-chev">${ICON.chev}</span></button></div>`;
         if (r.key === 'custom') h += `<div class="field-group"><label class="eyebrow" for="rh-name-${d}">Theme name</label><input class="field" id="rh-name-${d}" data-rh-name="${d}" value="${esc(r.name || '')}" autocomplete="off" placeholder="Kids’ activities, Shop orders, Studio day…"></div>`;
         if (off) h += `<p class="hint">Days off stay blank: no tasks land here and there’s no nudge.${nTasks ? ` ${nTasks} ${nTasks === 1 ? 'task is' : 'tasks are'} still on ${FULL[d]}; find ${nTasks === 1 ? 'it' : 'them'} in All tasks.` : ''}</p>`;
         else h += `<div class="field-group"><label class="eyebrow" for="rh-desc-${d}">What goes on ${FULL[d]}</label>
@@ -1317,6 +1320,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     else if (sheet.kind === 'confirm-remove') body = confirmRemoveSheet();
     else if (sheet.kind === 'project') body = projectSheet();
     else if (sheet.kind === 'projects') body = projectsSheet();
+    else if (sheet.kind === 'theme') body = themeSheet();
     else if (sheet.kind === 'confirm-project') body = confirmProjectSheet();
     else if (sheet.kind === 'account') body = APP.accountSheet(head, esc);
     else body = planSheet();
@@ -1520,6 +1524,15 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     for (let x = start; x; x = x.back) if (x.kind === 'task' && x.draft && x.draft.tag === from) x.draft.tag = to;
   }
 
+  function themeSheet() {
+    const d = sheet.day, cur = S.rhythm[d].key;
+    const opt = (key, name, desc) => `<button type="button" class="theme-opt" data-act="rh-set" data-val="${key}" aria-pressed="${cur === key}">${keyIcon(key, name, 20)}
+      <span class="theme-text"><strong>${esc(name)}</strong>${desc ? `<small>${esc(desc)}</small>` : ''}</span>${cur === key ? `<span class="dd-check">${ICON.tick}</span>` : ''}</button>`;
+    return head(FULL[d]) + '<div class="theme-list">' + opt('off', 'Off', 'A blank day. No tasks land here, no nudge.')
+      + THEME_LIB.map((x) => opt(x.key, x.name, x.desc)).join('')
+      + opt('custom', 'Your own theme', 'Name it and describe what goes on this day.') + '</div>';
+  }
+
   function confirmProjectSheet() {
     const p = S.projects[sheet.index];
     const n = S.tasks.filter((t) => t.tag === p.name).length;
@@ -1663,6 +1676,15 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
     switch (a) {
       case 'filter': S.filters[el.dataset.scope] = val; break;
       case 'all-day': S.allDay = val; break;
+      case 'rh-pick': openSheet({ kind: 'theme', day: val }); return;
+      case 'rh-set': {
+        const d = sheet.day, lib = libTheme(val), prev = S.rhythm[d];
+        if (prev.key !== val) S.rhythm[d] = { key: val, name: '', desc: lib ? lib.desc : '' };
+        S.rhythmOpen = Object.assign(S.rhythmOpen || {}, { [d]: true });
+        applyRhythm(); closeSheet(); save(); render();
+        if (val === 'custom') { const n = $('#rh-name-' + d); if (n) n.focus(); }
+        return;
+      }
       case 'rh-toggle': { const o = S.rhythmOpen || { [WEEKDAYS[0]]: true }; o[val] = !o[val]; S.rhythmOpen = o; break; }
       case 'see-next': S.allDay = 'Next'; S.filters.all = S.filters.week; location.hash = 'all'; save(); return;
       case 'all-done': S.allDone = !S.allDone; break;
@@ -1813,14 +1835,6 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
   document.addEventListener('change', (e) => {
     const el = e.target;
     if (el.dataset && el.dataset.carry) { const t = byId(el.dataset.carry); if (t) { carryOf(t).day = el.value; learn(t.tag, el.value); save(); render(); } }
-    if (el.dataset && el.dataset.rhTheme) {
-      const d = el.dataset.rhTheme, key = el.value, lib = libTheme(key);
-      S.rhythm[d] = { key, name: '', desc: lib ? lib.desc : '' };
-      S.rhythmOpen = Object.assign(S.rhythmOpen || {}, { [d]: true });
-      applyRhythm(); save(); render();
-      if (key === 'custom') { const n = $('#rh-name-' + d); if (n) n.focus(); }
-      return;
-    }
     if (el.id === 'nudge-time' && APP) { S.nudgeTime = el.value; save(); APP.setNudgeTime(el.value); }
   });
 

@@ -5,8 +5,8 @@
 import webpush from 'npm:web-push@3.6.7';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const PHRASE: Record<string, string> = {"plan": "planning the week", "client": "client work", "wrap": "wrapping up", "own": "website and personal projects", "deep": "deep work", "meetings": "meetings and calls", "job": "your day job", "side": "your side hustle", "second": "your second job", "admin": "admin and errands", "home": "home and chores", "family": "family time", "social": "seeing people", "health": "health and fitness", "money": "money matters", "learn": "learning something", "creative": "creative work", "reset": "resting and resetting"};
-const DEFAULT_RHYTHM: Record<string, string> = { Mon: 'plan', Tue: 'client', Wed: 'client', Thu: 'wrap', Fri: 'own', Sat: 'off', Sun: 'off' };
+const PHRASE: Record<string, string> = {"plan": "planning the week", "client": "work", "wrap": "wrapping up", "deep": "deep focus", "meetings": "meetings and calls", "side": "your side hustle", "admin": "admin and errands", "home": "home and chores", "social": "seeing people", "health": "health and fitness", "learn": "learning something", "creative": "creative work", "reset": "resting and resetting"};
+const DEFAULT_RHYTHM: Record<string, string> = { Mon: 'plan', Tue: 'client', Wed: 'client', Thu: 'wrap', Fri: 'custom', Sat: 'off', Sun: 'off' };
 type Day = { key: string; name?: string };
 
 function localParts(tz: string) {
@@ -37,11 +37,12 @@ Deno.serve(async (req) => {
     const { day, mins } = localParts(s.tz || 'America/New_York');
     const [h, m] = String(s.nudge_time || '08:30').split(':').map(Number);
     const due = h * 60 + m;
-    const theme: Day = rhythms[s.user_id]?.[day] ?? { key: DEFAULT_RHYTHM[day] };
+    const RETIRED: Record<string, string> = { own: 'website and personal projects', job: 'your day job', second: 'your second job', family: 'family time', money: 'money matters' };
+    const theme: Day = rhythms[s.user_id]?.[day] ?? (day === 'Fri' ? { key: 'custom', name: 'Website & Personal' } : { key: DEFAULT_RHYTHM[day] });
     const on = theme.key !== 'off';
     // Fire in the 15-minute window that starts at the chosen time (cron runs at :00, :15, :30, :45).
     if (!force && (!on || mins < due || mins >= due + 15)) continue;
-    const phrase = theme.key === 'custom' ? (theme.name || '').toLowerCase() : PHRASE[theme.key];
+    const phrase = theme.key === 'custom' ? (theme.name || '').toLowerCase() : PHRASE[theme.key] ?? RETIRED[theme.key];
     const payload = JSON.stringify({
       title: 'What do you want to tackle today?',
       body: on && phrase ? `Today is for ${phrase}.` : 'Today is a day off.',
