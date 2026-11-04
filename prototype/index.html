@@ -313,7 +313,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 .hero-big { display: flex; align-items: center; gap: 18px; }
 .hero-big strong { font-family: var(--display); font-size: 72px; font-weight: 400; letter-spacing: 0; line-height: 1; font-variant-numeric: tabular-nums; }
 .hero-big span { font-family: var(--mono); font-size: 17px; font-weight: 500; line-height: 1.3; letter-spacing: 0.06em; text-transform: uppercase; }
-.tally { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 10px 18px; }
+.tally { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 36px; }
 .tally li { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .tally-ico {
   flex-shrink: 0; width: 30px; height: 30px; border-radius: 9px; border: 1px solid rgba(255, 255, 255, 0.28);
@@ -322,6 +322,36 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 .tally b { font-size: 16px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .tally small { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8; }
 .hero-foot { margin: 0; font-size: 14px; line-height: 1.5; }
+a.hero-link { text-decoration: none; color: inherit; }
+.hero-more { display: inline-flex; align-items: center; gap: 6px; margin-top: -12px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
+.hero-more svg { width: 16px; height: 16px; }
+.stat-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stat { display: flex; flex-direction: column; gap: 4px; padding: 14px 12px; border-radius: 14px; background: var(--surface); }
+.stat strong { font-family: var(--display); font-size: 26px; font-weight: 400; line-height: 1; }
+.stat span { font-size: 12.5px; color: var(--text2); line-height: 1.3; }
+.sum-block { display: flex; flex-direction: column; gap: 12px; }
+.bars { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: 24px 92px 1fr 40px; align-items: center; gap: 10px; }
+.bar-name { font-size: 14px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { position: relative; height: 12px; }
+.bar-track::before { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--all) * 100%); border: 1px solid var(--line2); border-radius: 6px; }
+.bar-track i { position: absolute; inset: 0 auto 0 0; width: calc(var(--done) * 100%); background: var(--ink); border-radius: 6px; }
+.bar-num, .col-num { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.bar-num small, .col-num small { font-size: 12px; font-weight: 400; color: var(--muted); }
+.cols { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: 8px; align-items: end; padding: 14px 10px 12px; border-radius: 16px; background: var(--surface); }
+.col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.col .col-num { text-align: center; }
+.col-track { position: relative; width: 26px; height: 110px; }
+.col-track::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--all) * 100%); border: 1px solid var(--line2); border-radius: 7px; }
+.col-track i { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--done) * 100%); background: var(--ink); border-radius: 7px; }
+.col-day { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.col.is-today .col-day { color: var(--ink); font-weight: 600; }
+.done-day { display: flex; flex-direction: column; gap: 6px; }
+.done-day + .done-day { margin-top: 8px; }
+.done-day-head { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.done-day-head strong { font-weight: 600; }
+.done-day-head small { margin-left: auto; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.win .rep { margin-left: auto; display: inline-flex; color: var(--faint); }
 
 .wins { display: flex; flex-direction: column; gap: 6px; }
 .wins-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 2px 4px; flex-wrap: wrap; }
@@ -940,7 +970,7 @@ a.proj-row { text-decoration: none; }
   let resetArmed = false;
   let toastTimer = null, notifTimer = null;
 
-  const view = () => { let h = location.hash.slice(1); if (h === 'settings') h = 'account'; return ['today', 'week', 'wrap', 'all', 'account', 'rhythm'].includes(h) ? h : 'today'; };
+  const view = () => { let h = location.hash.slice(1); if (h === 'settings') h = 'account'; return ['today', 'week', 'wrap', 'all', 'account', 'rhythm', 'summary'].includes(h) ? h : 'today'; };
   const byId = (id) => S.tasks.find((t) => t.id === id);
 
   /* ---------- Pieces ---------- */
@@ -1040,11 +1070,12 @@ a.proj-row { text-decoration: none; }
     const done = S.tasks.filter((t) => t.status === 'done');
     const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
     const byProject = S.projects.map((p) => ({ p, n: done.filter((t) => t.tag === p.name).length })).filter((c) => c.n).sort((a, b) => b.n - a.n);
-    let h = `<section class="hero" aria-labelledby="hero-h-${where}">
+    const link = where === 'week';
+    let h = `<${link ? 'a href="#summary" class="hero hero-link"' : 'section class="hero"'} aria-labelledby="hero-h-${where}">
       <div class="hero-big"><strong>${done.length}</strong><span id="hero-h-${where}">${done.length === 1 ? 'Task' : 'Tasks'} completed<br>this week</span></div>`;
     if (byProject.length) h += '<ul class="tally" aria-label="By project">' + byProject.map((c) => `<li><span class="tally-ico">${picon(c.p.icon, 16)}</span><b>${c.n}</b><small>${esc(c.p.name)}</small></li>`).join('') + '</ul>';
     const foot = where === 'week' ? `Wrap it up on ${FULL[wrapDay()]} for your ${ord(S.streak + 1)} week in a row.` : `Close this out for your ${ord(S.streak + 1)} week in a row.`;
-    return h + `<p class="hero-foot">${foot}</p></section>`;
+    return h + `<p class="hero-foot">${foot}</p>${link ? `<span class="hero-more">See summary${ICON.arrow}</span>` : ''}</${link ? 'a' : 'section'}>`;
   }
 
   function renderAll() {
@@ -1122,6 +1153,49 @@ a.proj-row { text-decoration: none; }
     return head('Delete your account?') + `<p class="hint">Everything in Tackle goes: tasks, projects, your weekly rhythm and the daily nudge. You can sign up again later, but it starts empty.</p>
       <div class="confirm-btns"><button type="button" class="ghost-btn" data-act="acct-del-keep">Keep it</button>
         <button type="button" class="danger-btn" data-act="acct-del">Delete</button></div>`;
+  }
+
+  // Summary: what got done this week, by project and by day, then the list.
+  function renderSummary() {
+    const mine = S.tasks.filter((t) => !t.next);
+    const done = mine.filter((t) => t.status === 'done');
+    const pct = mine.length ? Math.round((done.length / mine.length) * 100) : 0;
+    const ord = (n) => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+    let h = `<a class="wrap-back sub-back" href="#week">${ICON.back}Week</a>
+      <header class="head"><p class="eyebrow">${fmt(dateOf(WEEKDAYS[0]))} – ${fmt(dateOf(WEEKDAYS[WEEKDAYS.length - 1]))}</p><h1>Summary</h1></header>`;
+    h += heroHTML('summary');
+    h += `<section class="stat-row" aria-label="This week in numbers">
+      <div class="stat"><strong>${pct}%</strong><span>of planned tasks done</span></div>
+      <div class="stat"><strong>${mine.length - done.length}</strong><span>still open</span></div>
+      <div class="stat"><strong>${S.streak}</strong><span>${S.streak === 1 ? 'week' : 'weeks'} in a row</span></div></section>`;
+    // by project
+    const projs = S.projects.map((p) => ({ name: p.name, d: done.filter((t) => t.tag === p.name).length, all: mine.filter((t) => t.tag === p.name).length })).filter((x) => x.all);
+    const none = { name: '', d: done.filter((t) => !t.tag).length, all: mine.filter((t) => !t.tag).length };
+    if (none.all) projs.push(none);
+    projs.sort((a, b) => b.d - a.d || b.all - a.all);
+    const maxP = Math.max(1, ...projs.map((x) => x.all));
+    h += '<section class="sum-block" aria-labelledby="by-proj"><h2 class="eyebrow" id="by-proj">By project</h2><div class="bars">'
+      + projs.map((x) => `<div class="bar-row">${tile(x.name, true)}<span class="bar-name">${esc(x.name || 'No project')}</span>
+          <span class="bar-track" style="--all:${x.all / maxP};--done:${x.all ? x.d / maxP : 0}" aria-hidden="true"><i></i></span><span class="bar-num">${x.d}<small>/${x.all}</small></span></div>`).join('')
+      + '</div><p class="hint">Filled = done, outline = planned this week.</p></section>';
+    // by day
+    const days = WEEKDAYS.map((d) => ({ d, done: done.filter((t) => t.day === d).length, all: mine.filter((t) => t.day === d).length }));
+    const maxD = Math.max(1, ...days.map((x) => x.all));
+    h += `<section class="sum-block" aria-labelledby="by-day"><h2 class="eyebrow" id="by-day">By day</h2><div class="cols" style="--n:${days.length}">`
+      + days.map((x) => `<div class="col${x.d === S.simDay ? ' is-today' : ''}"><span class="col-num">${x.done}<small>/${x.all}</small></span>
+          <span class="col-track" style="--all:${x.all / maxD};--done:${x.done / maxD}" aria-label="${FULL[x.d]}: ${x.done} of ${x.all} done"><i></i></span>
+          ${themeIcon(x.d, 16)}<span class="col-day">${x.d}</span></div>`).join('')
+      + '</div></section>';
+    // list
+    h += '<section class="sum-block" aria-labelledby="done-list"><h2 class="eyebrow" id="done-list">Completed</h2>';
+    if (!done.length) h += '<p class="quiet-note">Nothing finished yet this week. Wins land here.</p>';
+    for (const d of WEEKDAYS) {
+      const ds = done.filter((t) => t.day === d);
+      if (!ds.length) continue;
+      h += `<div class="done-day"><p class="done-day-head">${themeIcon(d, 16)}<strong>${FULL[d]}</strong><small>${ds.length}</small></p>`
+        + ds.map((t) => `<button type="button" class="win" data-act="edit" data-id="${t.id}">${tile(t.tag, true)}<span>${esc(t.label)}</span>${t.repeat ? `<em class="rep">${ICON.repeat}</em>` : ''}</button>`).join('') + '</div>';
+    }
+    return h + '</section>';
   }
 
   function renderRhythm() {
@@ -1949,13 +2023,13 @@ a.proj-row { text-decoration: none; }
       if (APP.gate) { const g = APP.gate(); if (g) { $('#app').innerHTML = g; document.body.classList.add('is-gated'); return; } }
       document.body.classList.remove('is-gated');
     } else $('#proto').innerHTML = renderProto();
-    $('#app').innerHTML = v === 'today' ? renderToday() : v === 'week' ? renderWeek() : v === 'all' ? renderAll() : v === 'account' ? renderAccount() : v === 'rhythm' ? renderRhythm() : renderWrap();
+    $('#app').innerHTML = v === 'today' ? renderToday() : v === 'week' ? renderWeek() : v === 'all' ? renderAll() : v === 'account' ? renderAccount() : v === 'rhythm' ? renderRhythm() : v === 'summary' ? renderSummary() : renderWrap();
     $('#app').classList.toggle('is-wrap', v === 'wrap');
     lastView = v; lastSimDay = S.simDay;
     document.querySelectorAll('.tab').forEach((tab) => {
-      if (tab.dataset.v === v || (v === 'rhythm' && tab.dataset.v === 'account')) tab.setAttribute('aria-current', 'page'); else tab.removeAttribute('aria-current');
+      if (tab.dataset.v === v || (v === 'rhythm' && tab.dataset.v === 'account') || (v === 'summary' && tab.dataset.v === 'week')) tab.setAttribute('aria-current', 'page'); else tab.removeAttribute('aria-current');
     });
-    $('#fab').hidden = v === 'wrap' || v === 'account' || v === 'rhythm';
+    $('#fab').hidden = v === 'wrap' || v === 'account' || v === 'rhythm' || v === 'summary';
   }
 
   // Tap and hold a Week or Plan card, then drag it to another day or another spot in a day.
