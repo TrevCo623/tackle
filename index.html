@@ -1090,7 +1090,7 @@ a.proj-row { text-decoration: none; }
     if (!THEMES[d]) {
       const i0 = ALLDAYS.indexOf(d), nd = ALLDAYS.concat(ALLDAYS).slice(i0 + 1).find((x) => THEMES[x]) || WEEKDAYS[0];
       const nCount = S.tasks.filter((t) => t.day === nd && t.status !== 'done').length;
-      return `<header class="head">${acctBtn()}<p class="eyebrow">${esc(date)}</p><h1 class="today-title">Today is for resting</h1>
+      return `<header class="head slotted">${acctBtn()}<div class="top-slot"><p class="eyebrow">${esc(date)}</p></div><h1 class="today-title">Today is for resting</h1>
         <p class="lede">Free days are blank on purpose.</p></header>
         <section class="next-card"><p class="eyebrow">Up next</p>
         <div class="title-row">${themeIcon(nd)}<strong>${FULL[nd]} · ${esc(THEMES[nd].name)}</strong></div>
@@ -1099,7 +1099,7 @@ a.proj-row { text-decoration: none; }
     }
     const th = THEMES[d];
     const L = todayLists(d, S.filters.today);
-    let h = `<header class="head">${acctBtn()}<p class="eyebrow">${esc(date)}</p>
+    let h = `<header class="head slotted">${acctBtn()}<div class="top-slot"><p class="eyebrow">${esc(date)}</p></div>
       <h1 class="today-title">Today is for ${esc(th.phrase)}</h1></header>`;
     if (th.key === 'plan' && WEEKDAYS.find((x) => THEMES[x].key === 'plan') === d) {
       h += `<button type="button" class="plan-btn" data-act="plan"><strong>Make a plan for the week</strong>${ICON.arrow}</button>`;
@@ -1289,7 +1289,7 @@ a.proj-row { text-decoration: none; }
 
   function renderWeek() {
     const f = S.filters.week;
-    let h = `<header class="week-head"><div class="head"><p class="eyebrow">${fmt(dateOf(WEEKDAYS[0]))} – ${fmt(dateOf(WEEKDAYS[WEEKDAYS.length - 1]))}</p><h1>This week</h1></div>
+    let h = `<header class="week-head"><div class="head slotted"><div class="top-slot"><p class="eyebrow">${fmt(dateOf(WEEKDAYS[0]))} – ${fmt(dateOf(WEEKDAYS[WEEKDAYS.length - 1]))}</p></div><h1>This week</h1></div>
       <p class="legend">${ICON.repeat} = every week</p></header>`;
     h += heroHTML('week');
     const allOpen = WEEKDAYS.every(dayOpen);
