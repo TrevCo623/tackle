@@ -479,6 +479,7 @@ body.is-dragging-task { overflow: hidden; touch-action: none; }
 .static-field { margin: 0; font-size: 16px; color: var(--ink); padding: 2px 0; }
 .danger-zone { display: flex; flex-direction: column; gap: 10px; margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--line); }
 .danger-outline { min-height: 50px; border-radius: 14px; border: 1px solid #A3402F; background: transparent; color: #A3402F; font-size: 15px; font-weight: 600; }
+.settings-list > .proj-row:first-child, .settings-list > .acct-row:first-child { border-top: 1px solid var(--line); }
 .set-group { display: flex; flex-direction: column; margin-top: 24px; }
 .set-group:first-child { margin-top: 0; }
 .set-group > .eyebrow { margin-bottom: 6px; }
@@ -1093,16 +1094,20 @@ a.proj-row { text-decoration: none; }
   function renderAccount() {
     const real = APP && APP.user;
     const u = real ? APP.user() : { name: S.protoName || 'Trev Connolly', email: 'trev@example.com' };
-    let h = `<section class="set-group" aria-labelledby="set-week"><h2 class="eyebrow" id="set-week">Your week</h2>
-      <a class="proj-row rhythm-row" href="#rhythm"><span class="proj-text"><strong>Weekly rhythm</strong>
-        <span class="rhythm-mini">${ALLDAYS.map((x) => `<span class="rm-row${THEMES[x] ? '' : ' is-free'}"><span class="rm-day">${x}</span>${themeIcon(x, 16)}<span class="rm-name">${esc(THEMES[x] ? THEMES[x].short : 'Free')}</span></span>`).join('')}</span></span><span class="chev">${ICON.chev}</span></a>
-      <button type="button" class="proj-row" data-act="projects"><span class="proj-text"><strong>Projects</strong><small>${S.projects.length} ${S.projects.length === 1 ? 'project' : 'projects'}</small></span><span class="chev">${ICON.chev}</span></button></section>`;
-    h += '<section class="set-group" aria-labelledby="set-notif"><h2 class="eyebrow" id="set-notif">Notifications</h2>';
-    h += real ? APP.nudgeRows() : protoNudgeRows();
-    h += `</section><section class="set-group" aria-labelledby="set-acct"><h2 class="eyebrow" id="set-acct">Account</h2>
-      <button type="button" class="proj-row" data-act="account-page"><span class="proj-text"><strong>${esc(u.name || 'Your account')}</strong><small>${esc(u.email || '')} · Google</small></span><span class="chev">${ICON.chev}</span></button></section>`;
+    const nudgeOn = real ? APP.nudgeOn() : !!S.protoNudge;
+    const row = (act, title, sub) => `<button type="button" class="proj-row" data-act="${act}"><span class="proj-text"><strong>${title}</strong><small>${sub}</small></span><span class="chev">${ICON.chev}</span></button>`;
+    let h = `<a class="proj-row rhythm-row" href="#rhythm"><span class="proj-text"><strong>Weekly rhythm</strong>
+        <span class="rhythm-mini">${ALLDAYS.map((x) => `<span class="rm-row${THEMES[x] ? '' : ' is-free'}"><span class="rm-day">${x}</span>${themeIcon(x, 16)}<span class="rm-name">${esc(THEMES[x] ? THEMES[x].short : 'Free')}</span></span>`).join('')}</span></span><span class="chev">${ICON.chev}</span></a>`;
+    h += row('projects', 'Projects', `${S.projects.length} ${S.projects.length === 1 ? 'project' : 'projects'}`);
+    h += row('notif-page', 'Notifications', nudgeOn ? `Daily nudge on · ${timeLabel(S.nudgeTime || '08:30')}` : 'Daily nudge off');
+    h += row('account-page', 'Account', esc(u.name || u.email || 'Signed in'));
     h += real ? '<button type="button" class="ghost-btn" data-act="sign-out">Sign out</button>' : '<button type="button" class="ghost-btn" disabled>Sign out</button>';
-    return '<header class="head"><h1>Settings</h1></header><div class="acct-page">' + h + '</div>';
+    return '<header class="head"><h1>Settings</h1></header><div class="acct-page settings-list">' + h + '</div>';
+  }
+
+  function notifPage() {
+    const real = APP && APP.user;
+    return pageHead('Settings', 'close-sheet', 'Notifications') + '<div class="acct-page settings-list">' + (real ? APP.nudgeRows() : protoNudgeRows()) + '</div>';
   }
 
   function accountPage() {
@@ -1391,6 +1396,7 @@ a.proj-row { text-decoration: none; }
     else if (sheet.kind === 'projects') body = projectsSheet();
     else if (sheet.kind === 'theme') body = themeSheet();
     else if (sheet.kind === 'account-page') body = accountPage();
+    else if (sheet.kind === 'notif-page') body = notifPage();
     else if (sheet.kind === 'confirm-account') body = confirmDeleteAccount();
     else if (sheet.kind === 'confirm-project') body = confirmProjectSheet();
     else if (sheet.kind === 'account') body = APP.accountSheet(head, esc);
@@ -1756,13 +1762,14 @@ a.proj-row { text-decoration: none; }
       case 'filter': S.filters[el.dataset.scope] = val; break;
       case 'all-day': S.allDay = val; break;
       case 'account-page': openSheet({ kind: 'account-page', page: true }); return;
+      case 'notif-page': openSheet({ kind: 'notif-page', page: true }); return;
       case 'acct-del-ask': openSheet({ kind: 'confirm-account', back: sheet }); return;
       case 'acct-del-keep': openSheet(sheet.back); return;
       case 'acct-del':
         if (APP && APP.deleteAccount) { APP.deleteAccount().catch((e) => toast('Couldn’t delete your account: ' + e.message)); return; }
         try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
         S = seed(); applyRhythm(); closeSheet(); location.hash = 'today'; toast('Prototype: account deleted and data reset'); return;
-      case 'proto-nudge': S.protoNudge = !S.protoNudge; if (S.protoNudge) toast('Daily nudge on (preview only)'); break;
+      case 'proto-nudge': S.protoNudge = !S.protoNudge; if (S.protoNudge) toast('Daily nudge on (preview only)'); save(); if (sheet) renderSheet(); render(); return;
       case 'rh-pick': openSheet({ kind: 'theme', day: val }); return;
       case 'rh-set': {
         const d = sheet.day, lib = libTheme(val), prev = S.rhythm[d];
@@ -1859,7 +1866,7 @@ a.proj-row { text-decoration: none; }
       case 'account': openSheet({ kind: 'account' }); return;
       case 'sign-in': APP.signIn(); return;
       case 'sign-out': closeSheet(); APP.signOut(); return;
-      case 'nudge-toggle': (APP.nudgeOn() ? APP.pushOff() : APP.pushOn(S.nudgeTime || '08:30')).then(() => (sheet ? renderSheet() : render())); return;
+      case 'nudge-toggle': (APP.nudgeOn() ? APP.pushOff() : APP.pushOn(S.nudgeTime || '08:30')).then(() => { if (sheet) renderSheet(); render(); }); return;
       case 'notif-open': $('#notif').hidden = true; if (view() !== 'today') { location.hash = 'today'; return; } break;
       case 'reset':
         if (!resetArmed) { resetArmed = true; $('#proto').innerHTML = renderProto(); return; }
@@ -1931,7 +1938,7 @@ a.proj-row { text-decoration: none; }
   document.addEventListener('change', (e) => {
     const el = e.target;
     if (el.dataset && el.dataset.carry) { const t = byId(el.dataset.carry); if (t) { carryOf(t).day = el.value; learn(t.tag, el.value); save(); render(); } }
-    if (el.id === 'nudge-time') { S.nudgeTime = el.value; save(); if (APP) APP.setNudgeTime(el.value); }
+    if (el.id === 'nudge-time') { S.nudgeTime = el.value; save(); render(); if (APP) APP.setNudgeTime(el.value); }
   });
 
   document.addEventListener('keydown', (e) => {
@@ -2049,7 +2056,7 @@ a.proj-row { text-decoration: none; }
     APP.getState = () => S;
     APP.setState = (next) => { S = next; applyRhythm(); S.carry = S.carry || {}; S.wrapStep = S.wrapStep || 1; S.simDay = realDay(); rollWeek(); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ } if (!sheet) render(); };
     APP.fresh = freshState;
-    APP.render = () => { if (sheet && sheet.kind === 'account') renderSheet(); else render(); };
+    APP.render = () => { if (sheet && /^(account|notif-page|account-page)$/.test(sheet.kind)) renderSheet(); render(); };
     APP.toast = toast;
     const tickDay = () => { const d = realDay(); const before = S.weekOf; S.simDay = d; rollWeek(); if (d !== lastSimDay || S.weekOf !== before) { save(); render(); } };
     document.addEventListener('visibilitychange', () => { if (!document.hidden) tickDay(); });
