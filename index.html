@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F7F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#191917" media="(prefers-color-scheme: dark)">
-<meta name="tackle-build" content="1793835195">
+<meta name="tackle-build" content="1793836256">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -758,6 +758,7 @@ a.proj-row { text-decoration: none; }
 .prompt-list li span { font-family: var(--mono); font-size: 12px; color: var(--muted); padding-top: 3px; }
 .sheet-actions { display: flex; flex-direction: column; gap: 4px; }
 /* Cleared-day / cleared-week celebration */
+.confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 60; }
 .cheer { position: relative; overflow: hidden; padding: 24px 22px 22px; border-radius: 20px; background: var(--mon); color: #FFFFFF; }
 .cheer-title { margin: 0; font-family: var(--display); font-size: 32px; font-weight: 400; line-height: 1; text-transform: uppercase; max-width: 70%; }
 .cheer-line { margin: 10px 0 0; font-size: 16px; line-height: 1.4; max-width: 75%; color: rgba(255, 255, 255, 0.92); }
@@ -1157,18 +1158,18 @@ a.proj-row { text-decoration: none; }
     }
     const th = THEMES[d];
     const L = todayLists(d, S.filters.today);
+    const all = todayLists(d, 'All');
+    const cleared = !all.ready.length && !all.waiting.length && all.done.length;
+    // A cleared day trades the "Today is for…" headline for the celebration tile, in the same spot.
     let h = `<header class="head slotted">${acctBtn()}<div class="top-slot"><p class="eyebrow">${esc(date)}</p></div>
-      <h1 class="today-title">Today is for ${esc(th.phrase)}</h1></header>`;
+      ${cleared ? celebrateHTML('day:' + d, 'Great job!', 'You tackled all your tasks today.') : `<h1 class="today-title">Today is for ${esc(th.phrase)}</h1>`}</header>`;
     if (th.key === 'plan' && WEEKDAYS.find((x) => THEMES[x].key === 'plan') === d) {
       h += `<button type="button" class="plan-btn" data-act="plan"><strong>Make a plan for the week</strong>${ICON.arrow}</button>`;
     }
     if (d === wrapDay()) {
       h += `<button type="button" class="plan-btn" data-act="go-wrap"><strong>Wrap up the week</strong>${ICON.arrow}</button>`;
     }
-    const all = todayLists(d, 'All');
-    const cleared = !all.ready.length && !all.waiting.length && all.done.length;
-    if (cleared) h += celebrateHTML('day:' + d, 'Great job!', 'You tackled all your tasks today.');
-    else h += chips('today');
+    if (!cleared) h += chips('today');
     if (!cleared) {
     h += '<section class="section" aria-labelledby="ready-h"><h2 class="eyebrow" id="ready-h">Ready</h2>';
     if (L.ready.length) {
@@ -2237,6 +2238,47 @@ a.proj-row { text-decoration: none; }
   // A filter can point at something that no longer exists (a renamed project, a day that went Free,
   // a value saved by an older version). The dropdown would show "All" while the list stays empty,
   // so anything that isn't a current option falls back to All.
+  // Confetti: a short burst from the celebration tile, only at the moment the last task of the day
+  // (or week) gets done. Skipped when reduced motion is on.
+  const dayCleared = (d) => { const L = todayLists(d, 'All'); return !!(THEMES[d] && !L.ready.length && !L.waiting.length && L.done.length); };
+  const weekCleared = () => { const w = S.tasks.filter((t) => !t.next && WEEKDAYS.includes(t.day)); return !!(w.length && w.every((t) => t.status === 'done')); };
+  const clearedBefore = {};
+  function confetti(from) {
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const c = document.createElement('canvas'), dpr = window.devicePixelRatio || 1;
+    c.className = 'confetti'; c.width = innerWidth * dpr; c.height = innerHeight * dpr; document.body.appendChild(c);
+    const ctx = c.getContext('2d'); ctx.scale(dpr, dpr);
+    const r = from ? from.getBoundingClientRect() : { left: innerWidth / 2 - 1, width: 2, top: innerHeight / 3, height: 0 };
+    const ox = r.left + r.width / 2, oy = r.top + r.height / 2;
+    const cs = getComputedStyle(document.documentElement);
+    const colors = ['--mon', '--amber', '--tue', '--fri', '--ink'].map((v) => cs.getPropertyValue(v).trim() || '#6E9274').concat(['#FFFFFF', '#F2C94C']);
+    const parts = Array.from({ length: 90 }, () => {
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.2, v = 6 + Math.random() * 8;
+      return { x: ox + (Math.random() - 0.5) * r.width * 0.6, y: oy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, w: 5 + Math.random() * 5, h: 3 + Math.random() * 6,
+        rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, col: colors[(Math.random() * colors.length) | 0], round: Math.random() < 0.3 };
+    });
+    const t0 = performance.now();
+    (function tick(now) {
+      const t = (now - t0) / 1000;
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      ctx.globalAlpha = Math.max(0, 1 - Math.max(0, t - 1.1) / 0.6);
+      for (const p of parts) {
+        p.vy += 0.32; p.vx *= 0.985; p.vy *= 0.985; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.col;
+        if (p.round) { ctx.beginPath(); ctx.arc(0, 0, p.w / 2.4, 0, Math.PI * 2); ctx.fill(); } else ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+      if (t < 1.7) requestAnimationFrame(tick); else c.remove();
+    })(t0);
+  }
+  function checkCelebrate(v) {
+    const dk = 'day:' + (S.weekOf || '') + S.simDay, wk = 'week:' + (S.weekOf || '');
+    const d = dayCleared(S.simDay), w = weekCleared();
+    const fire = (clearedBefore[dk] === false && d && v === 'today') || (clearedBefore[wk] === false && w && (v === 'week' || v === 'today'));
+    clearedBefore[dk] = d; clearedBefore[wk] = w;
+    if (fire) requestAnimationFrame(() => confetti(document.querySelector('#app .cheer')));
+  }
+
   function cleanFilters() {
     S.filters = Object.assign({ today: 'All', week: 'All', all: 'All', sum: 'All' }, S.filters || {});
     const used = S.projects.filter((p) => S.tasks.some((t) => t.tag === p.name)).map((p) => p.name);
@@ -2260,6 +2302,7 @@ a.proj-row { text-decoration: none; }
     });
     $('#fab').hidden = v === 'wrap' || v === 'account' || v === 'rhythm' || v === 'summary';
     if (v === 'today' || v === 'week' || v === 'all') maybeAskStale();
+    checkCelebrate(v);
   }
 
   // Tap and hold a Week or Plan card, then drag it to another day or another spot in a day.
