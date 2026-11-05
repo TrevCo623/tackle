@@ -1747,9 +1747,11 @@ a.proj-row { text-decoration: none; }
     }
     const curDay = sheet.plan ? (t.repeat ? (t.home || t.day) : carryDay(t)) : t.day;
     let h = `<div class="sheet-head"><div class="preview-chip"><button type="button" class="back-btn" data-act="menu-back" aria-label="Back">${ICON.back}</button><h2 id="sheet-h" class="move-title">Move “${esc(t.label)}”</h2></div>${closeBtn}</div>`;
-    h += '<div class="field-group"><p class="eyebrow">Move to</p><div class="targets" role="group" aria-label="Move to day">' + WEEKDAYS.map((d) => {
-      const cur = d === curDay;
-      return `<button type="button" class="${cur ? 'is-current' : ''}" data-act="m-day" data-val="${d}" aria-pressed="${sheet.to === d}"${cur ? ' aria-label="' + FULL[d] + ', current day"' : ''}>${themeIcon(d, 26)}<span class="t-day">${d}</span><span class="t-theme">${THEMES[d].short}</span></button>`;
+    // Same vertical day list as the task and project pages; the task's current day is marked.
+    h += '<div class="field-group"><p class="eyebrow" id="move-lbl">Move to</p><div class="day-list" role="radiogroup" aria-labelledby="move-lbl">' + WEEKDAYS.map((d) => {
+      const cur = d === curDay, on = sheet.to === d;
+      const note = cur ? ' · Current day' : (!sheet.plan && isPast(d) ? ' · next week' : '');
+      return `<div class="day-opt${on ? ' is-on' : ''}"><button type="button" role="radio" aria-checked="${on}" class="day-pick-btn" data-act="m-day" data-val="${d}">${themeIcon(d)}<strong>${FULL[d]}</strong><span>${esc(THEMES[d].name)}${note}</span></button></div>`;
     }).join('') + '</div></div>';
     const ready = sheet.to && sheet.to !== curDay;
     if (ready && t.repeat && !sheet.plan) {
