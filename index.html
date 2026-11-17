@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F7F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#191917" media="(prefers-color-scheme: dark)">
-<meta name="tackle-build" content="1794952973">
+<meta name="tackle-build" content="1794953401">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -447,8 +447,9 @@ a.hero-link { text-decoration: none; }
 .step-bars span { height: 3px; border-radius: 2px; background: var(--line); }
 .step-bars span.on { background: var(--ink); }
 .wrap-nav { display: flex; gap: 10px; }
-.plan-proj { gap: 10px; }
-.plan-ptile { width: 52px; height: 52px; border-radius: 14px; margin-bottom: 4px; }
+.plan-proj-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.plan-picon { display: inline-flex; flex-shrink: 0; color: var(--ink); }
+.plan-picon svg { width: 30px; height: 30px; }
 .plan-recap .hero-big { margin: 0; }
 .plan-plus { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; border: 1.5px dashed var(--line2); border-radius: 16px;
   background: transparent; color: var(--ink); font: inherit; font-size: 16px; font-weight: 500; cursor: pointer; text-align: left; }
@@ -1522,7 +1523,6 @@ a.proj-row { text-decoration: none; }
       <span class="wcard-text"><span>${esc(t.label)}</span><small>${sub !== undefined ? sub : t.repeat ? ICON.repeat + 'Every week' : t.dep ? 'Waiting on: ' + esc(t.dep) : FULL[t.day] + (t.next ? ', next week' : '')}</small></span></div>
       <button type="button" class="more" data-act="menu" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button></div>`;
     const navBtn = (act, val, label) => `<button type="button" class="primary" data-act="${act}" data-val="${val}">${label}</button>`;
-    const backBtn = n > 1 || pi > 0 ? `<button type="button" class="ghost-btn" ${backAct}>Back</button>` : '';
     const open = S.tasks.filter((t) => !t.next && !t.repeat && t.status !== 'done' && WEEKDAYS.includes(t.day));
 
     if (n === 1) {
@@ -1541,23 +1541,23 @@ a.proj-row { text-decoration: none; }
       const P = projs[pi];
       const mine = S.tasks.filter((t) => t.tag === P.name && !t.next && t.status !== 'done' && WEEKDAYS.includes(t.day));
       const added = planAdded.map((a) => byId(a.id)).filter((t) => t && t.tag === P.name && !mine.includes(t));
-      h += `<header class="head plan-proj"><span class="ptile plan-ptile">${picon(P.icon, 28)}</span><h1>${esc(P.name)}</h1>
+      h += `<header class="head plan-proj"><div class="plan-proj-title"><h1>${esc(P.name)}</h1><span class="plan-picon" aria-hidden="true">${picon(P.icon, 30)}</span></div>
         <p class="lede">${mine.length ? `${mine.length} open ${mine.length === 1 ? 'task' : 'tasks'} this week.` : 'Nothing on the plan yet.'} What else needs to happen${THEMES[P.day] ? ` (it usually lands on ${FULL[P.day]})` : ''}?</p></header>`;
       const list = mine.concat(added);
       if (list.length) h += '<div class="wcards">' + list.map((t) => card(t)).join('') + '</div>';
       h += `<button type="button" class="plan-plus" data-act="plan-add-proj" data-val="${esc(P.name)}"><span class="plus-dot" aria-hidden="true">+</span>Add a ${esc(P.name)} task</button>`;
       const last = pi >= projs.length - 1;
-      h += `<div class="wrap-nav">${backBtn}${last ? navBtn('plan-step', 3, 'Next: Your week') : navBtn('plan-proj', pi + 1, 'Next project')}</div>`;
+      h += `<div class="wrap-nav">${last ? navBtn('plan-step', 3, 'Next: Your week') : navBtn('plan-proj', pi + 1, 'Next project')}</div>`;
       return h;
     }
 
-    h += `<header class="head"><h1>Your week</h1><p class="lede">Here’s the plan. Move anything that’s on the wrong day.</p></header>`;
+    h += `<header class="head"><h1>Your week</h1><p class="lede">Review the plan and make any changes you want.</p></header>`;
     h += '<section class="plan-list">' + WEEKDAYS.map((w) => {
       const items = S.tasks.filter((t) => !t.next && t.status !== 'done' && t.day === w);
       return `<div class="plan-day"><div class="plan-day-head">${themeIcon(w)}<strong>${FULL[w]}</strong><small>${esc(THEMES[w].name)}</small></div>`
         + (items.length ? '<div class="wcards">' + items.map((t) => card(t, planAdded.some((a) => a.id === t.id) ? 'New this week' : undefined)).join('') + '</div>' : '<p class="quiet-note">Nothing yet.</p>') + '</div>';
     }).join('') + '</section>';
-    h += `<div class="wrap-nav">${backBtn}${navBtn('plan-done', '', 'Done planning')}</div>`;
+    h += `<div class="wrap-nav">${navBtn('plan-done', '', 'Done planning')}</div>`;
     return h;
   }
 
