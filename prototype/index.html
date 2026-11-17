@@ -1507,7 +1507,7 @@ a.proj-row { text-decoration: none; }
   const planAdded = [];
   const planProjects = () => S.projects.slice();
   function renderPlan() {
-    const n = Math.min(Math.max(S.planStep || 1, 1), 3), names = ['Last week', 'Projects', 'Your week'];
+    const n = Math.min(Math.max(S.planStep || 1, 1), 3), names = ['Last week', 'Project Review', 'Your week'];
     const projs = planProjects(), pi = Math.min(S.planProj || 0, Math.max(projs.length - 1, 0));
     const backAct = n === 2 && pi > 0 ? `data-act="plan-proj" data-val="${pi - 1}"` : `data-act="plan-step" data-val="${n - 1}"`;
     const back = n > 1 || pi > 0
@@ -1515,7 +1515,7 @@ a.proj-row { text-decoration: none; }
       : `<a class="wrap-back" href="#today" aria-label="Back to Today">${ICON.back}</a>`;
     let h = `<div class="stepper" aria-label="Step ${n} of 3: ${names[n - 1]}">${back}
       <div class="step-bars" aria-hidden="true" style="grid-template-columns: repeat(3, 1fr)">${names.map((_, i) => `<span class="${i < n ? 'on' : ''}"></span>`).join('')}</div>
-      <p class="eyebrow">Step ${n} of 3 · ${names[n - 1]}${n === 2 && projs.length ? ` · ${pi + 1} of ${projs.length}` : ''}</p></div>`;
+      <p class="eyebrow">Step ${n} of 3 · ${names[n - 1]}</p></div>`;
     const card = (t, sub) => `<div class="wcard"><div class="wcard-main">${tile(t.tag, true)}
       <span class="wcard-text"><span>${esc(t.label)}</span><small>${sub !== undefined ? sub : t.repeat ? ICON.repeat + 'Every week' : t.dep ? 'Waiting on: ' + esc(t.dep) : FULL[t.day] + (t.next ? ', next week' : '')}</small></span></div>
       <button type="button" class="more" data-act="menu" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button></div>`;
@@ -1529,7 +1529,7 @@ a.proj-row { text-decoration: none; }
       h += `<section class="next-card"><p class="eyebrow">Start with</p><p>${L && L.next ? esc(L.next) : 'You didn’t leave a note at the Wrap. What matters most this week?'}</p></section>`;
       h += `<section class="sum-block"><h2 class="eyebrow">Still open · ${open.length}</h2>`
         + (open.length ? '<div class="wcards">' + open.map((t) => card(t)).join('') + '</div>' : '<p class="quiet-note">Nothing carried over. A clean start.</p>') + '</section>';
-      h += `<div class="wrap-nav">${navBtn('plan-step', 2, projs.length ? 'Next: Projects' : 'Next: Your week')}</div>`;
+      h += `<div class="wrap-nav">${navBtn('plan-step', 2, projs.length ? 'Next: Project Review' : 'Next: Your week')}</div>`;
       return h;
     }
 
