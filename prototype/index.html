@@ -443,7 +443,9 @@ a.hero-link { text-decoration: none; }
 .step-bars span { height: 3px; border-radius: 2px; background: var(--line); }
 .step-bars span.on { background: var(--ink); }
 .wrap-nav { display: flex; gap: 10px; }
-.plan-q h1 { font-size: 34px; line-height: 1.02; }
+.plan-proj { gap: 10px; }
+.plan-ptile { width: 52px; height: 52px; border-radius: 14px; margin-bottom: 4px; }
+.plan-recap .hero-big { margin: 0; }
 .plan-plus { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; border: 1.5px dashed var(--line2); border-radius: 16px;
   background: transparent; color: var(--ink); font: inherit; font-size: 16px; font-weight: 500; cursor: pointer; text-align: left; }
 .plus-dot { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: var(--on-ink); font-size: 24px; line-height: 1; font-weight: 400; }
@@ -1001,6 +1003,7 @@ a.proj-row { text-decoration: none; }
       wrapStep: 1,
       streak: 2,
       closed: null,
+      lastWrap: { wins: 14, next: 'Get the Client A quote out first, then protect Tuesday for wireframes.', wrapped: true },
       notifCopy: 'theme',
       showDone: false
     };
@@ -1023,6 +1026,7 @@ a.proj-row { text-decoration: none; }
     const cur = isoDay(thisMonday());
     if (!S.weekOf) S.weekOf = cur;
     if (S.weekOf < cur) {
+      const lastWins = S.tasks.filter((t) => t.status === 'done').length;
       S.tasks = S.tasks.filter((t) => {
         if (t.status === 'done' && !t.repeat) return false;
         if (t.repeat) t.status = 'todo';
@@ -1030,7 +1034,7 @@ a.proj-row { text-decoration: none; }
         t.next = false;
         return true;
       });
-      if (!S.closed) S.streak = 0;
+      if (!S.closed) { S.streak = 0; S.lastWrap = { wins: lastWins, next: '', wrapped: false }; }
       S.closed = null; S.carry = {}; S.wrapStep = 1; S.notes = { proud: '', better: '', next: '' }; S.weekOpen = {};
       S.weekOf = cur;
     }
@@ -1491,49 +1495,62 @@ a.proj-row { text-decoration: none; }
       <button type="button" class="primary" data-act="${n === 3 ? 'close-week' : 'wrap-step'}" data-val="${n + 1}">${nextLabel}</button></div>`;
   }
 
-  /* ---------- Planning mode (Monday) ---------- */
-  // Step 1 reviews the week as it stands; steps 2-6 ask one question each, with a + to add tasks
-  // as the answers come. The last question shows everything added so days can be adjusted.
-  const PLAN_QS = [
-    ['What’s due this week?', 'Deadlines, promises, anything with a date on it.'],
-    ['What does done look like?', 'Picture the end of the week. What’s finished?'],
-    ['What are the steps?', 'Break the big things into tasks you can do in one sitting.'],
-    ['What’s blocked?', 'Anything waiting on someone else? Add it, then put it on hold.'],
-    ['Which day does each step go on?', 'Tackle picked a day for each new task. Move any that feel wrong.'],
-  ];
+  /* ---------- Planning mode (the Planning day) ---------- */
+  // 1 Last week: a reminder of the Wrap (tasks done, what to start with) and what's still open.
+  // 2 Projects: one project per screen, with its open tasks and a + to add more.
+  // 3 Your week: the plan, Monday to Friday.
   const planAdded = [];
+  const planProjects = () => S.projects.slice();
   function renderPlan() {
-    const total = PLAN_QS.length + 1, n = Math.min(Math.max(S.planStep || 1, 1), total);
-    const back = n > 1
-      ? `<button type="button" class="wrap-back" data-act="plan-step" data-val="${n - 1}" aria-label="Back">${ICON.back}</button>`
+    const n = Math.min(Math.max(S.planStep || 1, 1), 3), names = ['Last week', 'Projects', 'Your week'];
+    const projs = planProjects(), pi = Math.min(S.planProj || 0, Math.max(projs.length - 1, 0));
+    const backAct = n === 2 && pi > 0 ? `data-act="plan-proj" data-val="${pi - 1}"` : `data-act="plan-step" data-val="${n - 1}"`;
+    const back = n > 1 || pi > 0
+      ? `<button type="button" class="wrap-back" ${backAct} aria-label="Back">${ICON.back}</button>`
       : `<a class="wrap-back" href="#today" aria-label="Back to Today">${ICON.back}</a>`;
-    let h = `<div class="stepper" aria-label="Step ${n} of ${total}">${back}
-      <div class="step-bars" aria-hidden="true" style="grid-template-columns: repeat(${total}, 1fr)">${Array.from({ length: total }, (_, i) => `<span class="${i < n ? 'on' : ''}"></span>`).join('')}</div>
-      <p class="eyebrow">Step ${n} of ${total} · ${n === 1 ? 'Your week' : 'Question ' + (n - 1)}</p></div>`;
-    const card = (t) => `<div class="wcard"><div class="wcard-main">${tile(t.tag, true)}
-      <span class="wcard-text"><span>${esc(t.label)}</span><small>${t.repeat ? ICON.repeat + 'Every week' : t.dep ? 'Waiting on: ' + esc(t.dep) : FULL[t.day] + (t.next ? ', next week' : '')}</small></span></div>
+    let h = `<div class="stepper" aria-label="Step ${n} of 3: ${names[n - 1]}">${back}
+      <div class="step-bars" aria-hidden="true" style="grid-template-columns: repeat(3, 1fr)">${names.map((_, i) => `<span class="${i < n ? 'on' : ''}"></span>`).join('')}</div>
+      <p class="eyebrow">Step ${n} of 3 · ${names[n - 1]}${n === 2 && projs.length ? ` · ${pi + 1} of ${projs.length}` : ''}</p></div>`;
+    const card = (t, sub) => `<div class="wcard"><div class="wcard-main">${tile(t.tag, true)}
+      <span class="wcard-text"><span>${esc(t.label)}</span><small>${sub !== undefined ? sub : t.repeat ? ICON.repeat + 'Every week' : t.dep ? 'Waiting on: ' + esc(t.dep) : FULL[t.day] + (t.next ? ', next week' : '')}</small></span></div>
       <button type="button" class="more" data-act="menu" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button></div>`;
-    const nav = (label) => `<div class="wrap-nav">${n > 1 ? `<button type="button" class="ghost-btn" data-act="plan-step" data-val="${n - 1}">Back</button>` : ''}
-      <button type="button" class="primary" data-act="${n === total ? 'plan-done' : 'plan-step'}" data-val="${n + 1}">${label}</button></div>`;
+    const navBtn = (act, val, label) => `<button type="button" class="primary" data-act="${act}" data-val="${val}">${label}</button>`;
+    const backBtn = n > 1 || pi > 0 ? `<button type="button" class="ghost-btn" ${backAct}>Back</button>` : '';
+    const open = S.tasks.filter((t) => !t.next && !t.repeat && t.status !== 'done' && WEEKDAYS.includes(t.day));
 
     if (n === 1) {
-      h += `<header class="head"><h1>Your week</h1><p class="lede">Here’s what’s already on the plan. Take a look, then we’ll fill in the rest.</p></header>`;
-      if (S.notes.next && S.notes.next.trim()) h += `<section class="next-card"><p class="eyebrow">You said to start with</p><p>${esc(S.notes.next.trim())}</p></section>`;
-      h += '<section class="plan-list">' + WEEKDAYS.map((w) => {
-        const items = S.tasks.filter((t) => !t.next && t.status !== 'done' && t.day === w);
-        return `<div class="plan-day"><div class="plan-day-head">${themeIcon(w)}<strong>${FULL[w]}</strong><small>${esc(THEMES[w].name)}</small></div>`
-          + (items.length ? '<div class="wcards">' + items.map(card).join('') + '</div>' : '<p class="quiet-note">Nothing yet.</p>') + '</div>';
-      }).join('') + '</section>';
-      h += nav('Start planning');
+      const L = S.lastWrap;
+      h += `<header class="head"><h1>Last week</h1><p class="lede">${L && L.wrapped ? 'Here’s where your Wrap left things.' : 'A quick look back before you plan.'}</p></header>`;
+      if (L) h += `<section class="hero plan-recap"><div class="hero-big"><strong>${L.wins}</strong><span>${L.wins === 1 ? 'Task' : 'Tasks'} done<br>last week</span></div></section>`;
+      h += `<section class="next-card"><p class="eyebrow">Start with</p><p>${L && L.next ? esc(L.next) : 'You didn’t leave a note at the Wrap. What matters most this week?'}</p></section>`;
+      h += `<section class="sum-block"><h2 class="eyebrow">Still open · ${open.length}</h2>`
+        + (open.length ? '<div class="wcards">' + open.map((t) => card(t)).join('') + '</div>' : '<p class="quiet-note">Nothing carried over. A clean start.</p>') + '</section>';
+      h += `<div class="wrap-nav">${navBtn('plan-step', 2, projs.length ? 'Next: Projects' : 'Next: Your week')}</div>`;
       return h;
     }
-    const [q, help] = PLAN_QS[n - 2], last = n === total;
-    h += `<header class="head plan-q"><h1>${q}</h1><p class="lede">${help}</p></header>`;
-    const mine = planAdded.filter((a) => last || a.q === n).map((a) => byId(a.id)).filter(Boolean);
-    if (mine.length) h += '<div class="wcards">' + mine.map(card).join('') + '</div>';
-    else if (last) h += '<p class="quiet-note">No new tasks this time. The week stands as it is.</p>';
-    if (!last) h += `<button type="button" class="plan-plus" data-act="add"><span class="plus-dot" aria-hidden="true">+</span>Add a task</button>`;
-    h += nav(last ? 'Done planning' : 'Next question');
+
+    if (n === 2) {
+      if (!projs.length) { S.planStep = 3; return renderPlan(); }
+      const P = projs[pi];
+      const mine = S.tasks.filter((t) => t.tag === P.name && !t.next && t.status !== 'done' && WEEKDAYS.includes(t.day));
+      const added = planAdded.map((a) => byId(a.id)).filter((t) => t && t.tag === P.name && !mine.includes(t));
+      h += `<header class="head plan-proj"><span class="ptile plan-ptile">${picon(P.icon, 28)}</span><h1>${esc(P.name)}</h1>
+        <p class="lede">${mine.length ? `${mine.length} open ${mine.length === 1 ? 'task' : 'tasks'} this week.` : 'Nothing on the plan yet.'} What else needs to happen${THEMES[P.day] ? ` (it usually lands on ${FULL[P.day]})` : ''}?</p></header>`;
+      const list = mine.concat(added);
+      if (list.length) h += '<div class="wcards">' + list.map((t) => card(t)).join('') + '</div>';
+      h += `<button type="button" class="plan-plus" data-act="plan-add-proj" data-val="${esc(P.name)}"><span class="plus-dot" aria-hidden="true">+</span>Add a ${esc(P.name)} task</button>`;
+      const last = pi >= projs.length - 1;
+      h += `<div class="wrap-nav">${backBtn}${last ? navBtn('plan-step', 3, 'Next: Your week') : navBtn('plan-proj', pi + 1, 'Next project')}</div>`;
+      return h;
+    }
+
+    h += `<header class="head"><h1>Your week</h1><p class="lede">Here’s the plan. Move anything that’s on the wrong day.</p></header>`;
+    h += '<section class="plan-list">' + WEEKDAYS.map((w) => {
+      const items = S.tasks.filter((t) => !t.next && t.status !== 'done' && t.day === w);
+      return `<div class="plan-day"><div class="plan-day-head">${themeIcon(w)}<strong>${FULL[w]}</strong><small>${esc(THEMES[w].name)}</small></div>`
+        + (items.length ? '<div class="wcards">' + items.map((t) => card(t, planAdded.some((a) => a.id === t.id) ? 'New this week' : undefined)).join('') + '</div>' : '<p class="quiet-note">Nothing yet.</p>') + '</div>';
+    }).join('') + '</section>';
+    h += `<div class="wrap-nav">${backBtn}${navBtn('plan-done', '', 'Done planning')}</div>`;
     return h;
   }
 
@@ -2018,6 +2035,7 @@ a.proj-row { text-decoration: none; }
     S.streak += 1;
     if (APP) { const n = new Date(thisMonday()); n.setDate(n.getDate() + 7); S.weekOf = isoDay(n); }
     S.closed = { wins, rolled, dropped, star: star ? star.label : null };
+    S.lastWrap = { wins, next: (S.notes.next || '').trim(), wrapped: true };
     S.starred = null; S.carry = {}; S.wrapStep = 1; S.notes = { proud: '', better: '', next: '' };
   }
 
@@ -2171,8 +2189,10 @@ a.proj-row { text-decoration: none; }
       case 'p-day': sheet.draft.day = val || null; renderSheet(); return;
       case 'project-cancel': openSheet(sheet.back); return;
       case 'close-sheet': closeSheet(); return;
-      case 'plan': S.planStep = 1; planAdded.length = 0; location.hash = 'plan'; window.scrollTo({ top: 0 }); return;
-      case 'plan-step': S.planStep = +val; window.scrollTo({ top: 0 }); break;
+      case 'plan': S.planStep = 1; S.planProj = 0; planAdded.length = 0; location.hash = 'plan'; window.scrollTo({ top: 0 }); return;
+      case 'plan-step': S.planStep = +val; if (+val === 2 && S.planProj >= S.projects.length) S.planProj = Math.max(S.projects.length - 1, 0); window.scrollTo({ top: 0 }); break;
+      case 'plan-proj': S.planStep = 2; S.planProj = +val; window.scrollTo({ top: 0 }); break;
+      case 'plan-add-proj': openSheet({ kind: 'task', mode: 'add', draft: { label: '', tag: val, day: autoDay('', val), status: 'todo', dep: '', repeat: false, notes: '' } }); $('#f-label').focus(); return;
       case 'plan-done': location.hash = 'today'; toast(planAdded.length ? `Week planned · ${planAdded.length} new ${planAdded.length === 1 ? 'task' : 'tasks'}` : 'Week planned'); return;
       case 'go-week': closeSheet(); location.hash = 'week'; return;
       case 'toggle-done': S.showDone = !S.showDone; break;
