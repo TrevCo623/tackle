@@ -443,6 +443,10 @@ a.hero-link { text-decoration: none; }
 .step-bars span { height: 3px; border-radius: 2px; background: var(--line); }
 .step-bars span.on { background: var(--ink); }
 .wrap-nav { display: flex; gap: 10px; }
+.plan-q h1 { font-size: 34px; line-height: 1.02; }
+.plan-plus { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; border: 1.5px dashed var(--line2); border-radius: 16px;
+  background: transparent; color: var(--ink); font: inherit; font-size: 16px; font-weight: 500; cursor: pointer; text-align: left; }
+.plus-dot { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: var(--on-ink); font-size: 24px; line-height: 1; font-weight: 400; }
 .wrap-nav .primary { flex: 1; }
 .ghost-btn {
   min-height: 54px; padding: 0 20px; border-radius: 15px; border: 1px solid var(--line2); background: transparent;
@@ -1055,7 +1059,7 @@ a.proj-row { text-decoration: none; }
   let resetArmed = false;
   let toastTimer = null, notifTimer = null;
 
-  const view = () => { let h = location.hash.slice(1); if (h === 'settings') h = 'account'; return ['today', 'week', 'wrap', 'all', 'account', 'rhythm', 'summary'].includes(h) ? h : 'today'; };
+  const view = () => { let h = location.hash.slice(1); if (h === 'settings') h = 'account'; return ['today', 'week', 'wrap', 'plan', 'all', 'account', 'rhythm', 'summary'].includes(h) ? h : 'today'; };
   const byId = (id) => S.tasks.find((t) => t.id === id);
 
   /* ---------- Pieces ---------- */
@@ -1485,6 +1489,52 @@ a.proj-row { text-decoration: none; }
   function wrapNav(n, nextLabel) {
     return `<div class="wrap-nav">${n > 1 ? `<button type="button" class="ghost-btn" data-act="wrap-step" data-val="${n - 1}">Back</button>` : ''}
       <button type="button" class="primary" data-act="${n === 3 ? 'close-week' : 'wrap-step'}" data-val="${n + 1}">${nextLabel}</button></div>`;
+  }
+
+  /* ---------- Planning mode (Monday) ---------- */
+  // Step 1 reviews the week as it stands; steps 2-6 ask one question each, with a + to add tasks
+  // as the answers come. The last question shows everything added so days can be adjusted.
+  const PLAN_QS = [
+    ['What’s due this week?', 'Deadlines, promises, anything with a date on it.'],
+    ['What does done look like?', 'Picture the end of the week. What’s finished?'],
+    ['What are the steps?', 'Break the big things into tasks you can do in one sitting.'],
+    ['What’s blocked?', 'Anything waiting on someone else? Add it, then put it on hold.'],
+    ['Which day does each step go on?', 'Tackle picked a day for each new task. Move any that feel wrong.'],
+  ];
+  const planAdded = [];
+  function renderPlan() {
+    const total = PLAN_QS.length + 1, n = Math.min(Math.max(S.planStep || 1, 1), total);
+    const back = n > 1
+      ? `<button type="button" class="wrap-back" data-act="plan-step" data-val="${n - 1}" aria-label="Back">${ICON.back}</button>`
+      : `<a class="wrap-back" href="#today" aria-label="Back to Today">${ICON.back}</a>`;
+    let h = `<div class="stepper" aria-label="Step ${n} of ${total}">${back}
+      <div class="step-bars" aria-hidden="true" style="grid-template-columns: repeat(${total}, 1fr)">${Array.from({ length: total }, (_, i) => `<span class="${i < n ? 'on' : ''}"></span>`).join('')}</div>
+      <p class="eyebrow">Step ${n} of ${total} · ${n === 1 ? 'Your week' : 'Question ' + (n - 1)}</p></div>`;
+    const card = (t) => `<div class="wcard"><div class="wcard-main">${tile(t.tag, true)}
+      <span class="wcard-text"><span>${esc(t.label)}</span><small>${t.repeat ? ICON.repeat + 'Every week' : t.dep ? 'Waiting on: ' + esc(t.dep) : FULL[t.day] + (t.next ? ', next week' : '')}</small></span></div>
+      <button type="button" class="more" data-act="menu" data-id="${t.id}" aria-label="Options for ${esc(t.label)}">${ICON.more}</button></div>`;
+    const nav = (label) => `<div class="wrap-nav">${n > 1 ? `<button type="button" class="ghost-btn" data-act="plan-step" data-val="${n - 1}">Back</button>` : ''}
+      <button type="button" class="primary" data-act="${n === total ? 'plan-done' : 'plan-step'}" data-val="${n + 1}">${label}</button></div>`;
+
+    if (n === 1) {
+      h += `<header class="head"><h1>Your week</h1><p class="lede">Here’s what’s already on the plan. Take a look, then we’ll fill in the rest.</p></header>`;
+      if (S.notes.next && S.notes.next.trim()) h += `<section class="next-card"><p class="eyebrow">You said to start with</p><p>${esc(S.notes.next.trim())}</p></section>`;
+      h += '<section class="plan-list">' + WEEKDAYS.map((w) => {
+        const items = S.tasks.filter((t) => !t.next && t.status !== 'done' && t.day === w);
+        return `<div class="plan-day"><div class="plan-day-head">${themeIcon(w)}<strong>${FULL[w]}</strong><small>${esc(THEMES[w].name)}</small></div>`
+          + (items.length ? '<div class="wcards">' + items.map(card).join('') + '</div>' : '<p class="quiet-note">Nothing yet.</p>') + '</div>';
+      }).join('') + '</section>';
+      h += nav('Start planning');
+      return h;
+    }
+    const [q, help] = PLAN_QS[n - 2], last = n === total;
+    h += `<header class="head plan-q"><h1>${q}</h1><p class="lede">${help}</p></header>`;
+    const mine = planAdded.filter((a) => last || a.q === n).map((a) => byId(a.id)).filter(Boolean);
+    if (mine.length) h += '<div class="wcards">' + mine.map(card).join('') + '</div>';
+    else if (last) h += '<p class="quiet-note">No new tasks this time. The week stands as it is.</p>';
+    if (!last) h += `<button type="button" class="plan-plus" data-act="add"><span class="plus-dot" aria-hidden="true">+</span>Add a task</button>`;
+    h += nav(last ? 'Done planning' : 'Next question');
+    return h;
   }
 
   function renderWrap() {
@@ -1985,7 +2035,9 @@ a.proj-row { text-decoration: none; }
     } else {
       if (sheet.dayTouched) learn(clean.tag, clean.day);
       const next = isPast(clean.day);
-      S.tasks.push(Object.assign({ id: nid(), home: null, next }, clean));
+      const nt = Object.assign({ id: nid(), home: null, next }, clean);
+      S.tasks.push(nt);
+      if (view() === 'plan') planAdded.push({ id: nt.id, q: S.planStep });
       toast('Added to ' + FULL[clean.day] + (next ? ', next week' : ''));
     }
     save(); closeSheet(); render();
@@ -2119,7 +2171,9 @@ a.proj-row { text-decoration: none; }
       case 'p-day': sheet.draft.day = val || null; renderSheet(); return;
       case 'project-cancel': openSheet(sheet.back); return;
       case 'close-sheet': closeSheet(); return;
-      case 'plan': openSheet({ kind: 'plan' }); return;
+      case 'plan': S.planStep = 1; planAdded.length = 0; location.hash = 'plan'; window.scrollTo({ top: 0 }); return;
+      case 'plan-step': S.planStep = +val; window.scrollTo({ top: 0 }); break;
+      case 'plan-done': location.hash = 'today'; toast(planAdded.length ? `Week planned · ${planAdded.length} new ${planAdded.length === 1 ? 'task' : 'tasks'}` : 'Week planned'); return;
       case 'go-week': closeSheet(); location.hash = 'week'; return;
       case 'toggle-done': S.showDone = !S.showDone; break;
       case 'star': S.starred = S.starred === id ? null : id; break;
@@ -2289,13 +2343,13 @@ a.proj-row { text-decoration: none; }
       if (APP.gate) { const g = APP.gate(); if (g) { $('#app').innerHTML = g; document.body.classList.add('is-gated'); return; } }
       document.body.classList.remove('is-gated');
     } else $('#proto').hidden = true;
-    $('#app').innerHTML = v === 'today' ? renderToday() : v === 'week' ? renderWeek() : v === 'all' ? renderAll() : v === 'account' ? renderAccount() : v === 'rhythm' ? renderRhythm() : v === 'summary' ? renderSummary() : renderWrap();
-    $('#app').classList.toggle('is-wrap', v === 'wrap');
+    $('#app').innerHTML = v === 'today' ? renderToday() : v === 'week' ? renderWeek() : v === 'all' ? renderAll() : v === 'account' ? renderAccount() : v === 'rhythm' ? renderRhythm() : v === 'summary' ? renderSummary() : v === 'plan' ? renderPlan() : renderWrap();
+    $('#app').classList.toggle('is-wrap', v === 'wrap' || v === 'plan');
     lastView = v; lastSimDay = S.simDay;
     document.querySelectorAll('.tab').forEach((tab) => {
       if (tab.dataset.v === v || (v === 'rhythm' && tab.dataset.v === 'account') || (v === 'summary' && tab.dataset.v === 'week')) tab.setAttribute('aria-current', 'page'); else tab.removeAttribute('aria-current');
     });
-    $('#fab').hidden = v === 'wrap' || v === 'account' || v === 'rhythm' || v === 'summary';
+    $('#fab').hidden = v === 'wrap' || v === 'plan' || v === 'account' || v === 'rhythm' || v === 'summary';
     if (v === 'today' || v === 'week' || v === 'all') maybeAskStale();
     checkCelebrate(v);
   }
