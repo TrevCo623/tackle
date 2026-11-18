@@ -782,7 +782,7 @@ a.proj-row { text-decoration: none; }
 
 /* Toast + notification */
 .toast {
-  /* Confirmations: a full-screen moment that fades on its own (1.5s; longer when it offers Undo). Tap to dismiss. */
+  /* Confirmations: a full-screen moment that fades on its own (2.5s; longer when it offers Undo). Tap to dismiss. */
   position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
   padding: 32px; background: rgba(28, 28, 26, 0.94); color: #FFFFFF; text-align: center;
   animation: flash-in 0.22s ease-out both;
@@ -2012,7 +2012,7 @@ a.proj-row { text-decoration: none; }
       <p class="flash-title">${esc(title)}</p>${sub ? `<p class="flash-sub">${esc(sub)}</p>` : ''}${undo ? '<button type="button" data-act="undo">Undo</button>' : ''}`;
     el.classList.remove('is-out'); el.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(hideToast, undo ? 3000 : 1500);
+    toastTimer = setTimeout(hideToast, undo ? 3500 : 2500);
   }
   function hideToast() {
     const el = $('#toast'); if (el.hidden) return;
