@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F7F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#191917" media="(prefers-color-scheme: dark)">
-<meta name="tackle-build" content="1794957628">
+<meta name="tackle-build" content="1794972617">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -1666,7 +1666,7 @@ a.proj-row { text-decoration: none; }
   function staleTasks() {
     if (!THEMES[S.simDay]) return [];
     if (APP && S.weekOf && new Date(S.weekOf + 'T00:00:00') > thisMonday()) return [];
-    return S.tasks.filter((t) => !t.repeat && !t.next && t.status !== 'done' && WEEKDAYS.includes(t.day) && isPast(t.day));
+    return S.tasks.filter((t) => !t.next && t.status !== 'done' && WEEKDAYS.includes(t.day) && isPast(t.day));
   }
   let staleShown = false;
   function maybeAskStale() {
@@ -1681,10 +1681,19 @@ a.proj-row { text-decoration: none; }
   // Next week starts fresh, so a project's usual day wins outright; otherwise Tackle's normal pick.
   function nextWeekDay(t) {
     const p = t.tag && S.projects.find((x) => x.name === t.tag);
+    if (t.repeat) return t.home || t.day;
     return p && THEMES[p.day] ? p.day : autoDay(t.label, t.tag);
   }
   const staleList = () => (sheet && sheet.ids ? sheet.ids.map(byId).filter((t) => t && t.status !== 'done') : []);
+  // One-offs simply move. A recurring task moves for this week only (it keeps its usual day), and
+  // "next week" means skip it this week: it comes back on its usual day next week.
   function moveStale(t, to) {
+    if (t.repeat) {
+      t.home = t.home || t.day;
+      if (to.startsWith('next:')) { t.day = t.home; t.next = true; }
+      else { t.day = to; t.next = false; if (t.day === t.home) t.home = null; }
+      return;
+    }
     if (to.startsWith('next:')) { t.day = to.slice(5); t.next = true; }
     else { t.day = to; t.next = false; }
     t.home = null;
@@ -1697,7 +1706,7 @@ a.proj-row { text-decoration: none; }
     h += '<div class="stale-rows">' + list.map((t) => {
       const meta = [projGlyph(t.tag)];
       if (t.tag) meta.push(`<span>${esc(t.tag)}</span>`);
-      meta.push(`<span>${FULL[t.day]}</span>`);
+      meta.push(`<span class="rep">${t.repeat ? ICON.repeat : ''}${FULL[t.day]}</span>`);
       meta.push(t.status === 'doing' ? '<span class="flag">In progress</span>' : `<span>${t.dep ? 'Waiting' : STATUS[t.status]}</span>`);
       return `<div class="row st-${t.status}"><span class="status" aria-hidden="true">${ICON[t.status]}</span><span class="row-main"><span class="row-label">${esc(t.label)}</span><span class="row-meta">${meta.join('')}</span></span></div>`;
     }).join('') + '</div>';
@@ -1708,11 +1717,13 @@ a.proj-row { text-decoration: none; }
   }
   function stalePickPage() {
     const list = staleList();
-    const opts = WEEKDAYS.filter((d) => !isPast(d)).map((d) => [d, d === S.simDay ? 'Today' : FULL[d]])
+    const optsAll = WEEKDAYS.filter((d) => !isPast(d)).map((d) => [d, d === S.simDay ? 'Today' : FULL[d]])
       .concat(WEEKDAYS.map((d) => ['next:' + d, 'Next ' + FULL[d]]));
     let h = pageHead('Back', 'stale-back', 'Unfinished tasks', '', 'stale-form');
     h += '<form id="stale-form" novalidate class="stale-form">';
     h += list.map((t) => {
+      // Recurring tasks: this week's remaining days, or skip this week (back on its usual day).
+      const opts = t.repeat ? optsAll.filter((o) => !o[0].startsWith('next:')).concat([['next:' + (t.home || t.day), `Skip this week (back ${FULL[t.home || t.day]})`]]) : optsAll;
       const cur = (sheet.pick && sheet.pick[t.id]) || S.simDay, sel = opts.find((o) => o[0] === cur) || opts[0];
       return `<div class="stale-row">${tile(t.tag, true)}<span class="stale-name">${esc(t.label)}</span>
         <label class="dd"><span>${esc(sel[1])}</span><span class="caret">${ICON.chev}</span>
