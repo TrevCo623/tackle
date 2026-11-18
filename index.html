@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F7F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#191917" media="(prefers-color-scheme: dark)">
-<meta name="tackle-build" content="1794973403">
+<meta name="tackle-build" content="1794973756">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -797,15 +797,18 @@ a.proj-row { text-decoration: none; }
 /* Toast + notification */
 .toast {
   /* Confirmations: a full-screen moment that fades on its own (2.5s; longer when it offers Undo). Tap to dismiss. */
-  position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
   padding: 32px; background: rgba(28, 28, 26, 0.94); color: #FFFFFF; text-align: center;
   animation: flash-in 0.22s ease-out both;
 }
 .toast.is-out { animation: flash-out 0.25s ease-in both; }
 .toast .flash-ring { display: grid; place-items: center; width: 88px; height: 88px; border: 2px solid #FFFFFF; border-radius: 50%; animation: ring-in 0.4s cubic-bezier(.2, 1.4, .4, 1) both; }
 .toast .flash-ring svg { width: 40px; height: 40px; }
-.toast .flash-title { margin: 0; font-family: var(--display); font-size: 40px; line-height: 1; text-transform: uppercase; max-width: 320px; }
-.toast .flash-sub { margin: -4px 0 0; font-size: 16px; color: rgba(255, 255, 255, 0.82); max-width: 300px; }
+.toast .flash-ring { margin-bottom: 18px; }
+.toast .flash-text { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.toast .flash-pre { margin: 0; font-size: 16px; color: #D9D9D1; }
+.toast .flash-title { margin: 0; font-family: var(--display); font-size: 40px; line-height: 1.05; text-transform: uppercase; max-width: 330px; }
+.toast .flash-sub { margin: 0; font-family: var(--mono); font-size: 11px; letter-spacing: 0.02em; color: #999991; max-width: 300px; }
 .toast button { margin-top: 6px; min-height: 40px; padding: 0 22px; border: 0; border-radius: 20px; background: rgba(255, 255, 255, 0.14); color: #FFFFFF; font: inherit; font-size: 15px; font-weight: 600; }
 @keyframes flash-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes flash-out { from { opacity: 1; } to { opacity: 0; } }
@@ -1916,7 +1919,7 @@ a.proj-row { text-decoration: none; }
       if (onPage) { start = idx; return; }
       save();
       const msg = idx === 2 ? 'Moved to Done' : idx === 1 ? 'Moved to In progress' : 'Moved back to To do';
-      setTimeout(() => { if (sheet && sheet.kind === 'status') { closeSheet(); render(); toast(msg); } }, 420);
+      setTimeout(() => { if (sheet && sheet.kind === 'status') { closeSheet(); render(); toast(msg, false, { pre: idx === 0 ? 'Moved back to' : 'Moved to', title: STATUS[ORDER[idx]], sub: t.label }); } }, 420);
       start = idx;
     };
     el.addEventListener('pointerdown', (e) => { down = true; moved = false; x0 = e.clientX; el.setPointerCapture(e.pointerId); });
@@ -2017,19 +2020,24 @@ a.proj-row { text-decoration: none; }
   function closeSheet() { sheet = null; renderSheet(); }
 
   /* ---------- Toast + notification ---------- */
-  // Split a message into a big word or two and a quieter line: "Added to Tuesday" → ADDED / to Tuesday,
-  // "Week planned · 2 new tasks" → WEEK PLANNED / 2 new tasks.
+  // Confirmation layout (Trev's Figma): a small line, then the key word big, then a mono detail line
+  // (usually the task name). Callers can pass parts; otherwise the message is split here.
+  const DAYRX = '(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)';
   function flashParts(msg) {
-    if (msg.includes(' · ')) { const i = msg.indexOf(' · '); return [msg.slice(0, i), msg.slice(i + 3)]; }
-    const m = msg.match(/^(Added|Moved|Saved|Deleted|Removed|Marked|Back|Hold removed\.|Put on hold)\b\s*(.*)$/);
-    if (m && m[2]) return [m[1].replace(/\.$/, ''), m[2].replace(/^[.,]\s*/, '')];
-    return [msg, ''];
+    let m;
+    if (msg.includes(' · ')) { const i = msg.indexOf(' · '); return { title: msg.slice(0, i), sub: msg.slice(i + 3) }; }
+    if ((m = msg.match(new RegExp('^(.+?) (?:moved|moves) to ' + DAYRX + '(.*)$')))) return { pre: 'Moved to', title: m[2], sub: m[1] + (m[3] ? ' ·' + m[3].replace(/^,/, '') : '') };
+    if ((m = msg.match(/^(.*\bto) (.+)$/))) return { pre: m[1], title: m[2] };
+    if ((m = msg.match(/^([^\s:]+) (\S+)$/))) return { pre: m[1], title: m[2] };
+    return { title: msg };
   }
-  function toast(msg, undo) {
+  function toast(msg, undo, parts) {
     const el = $('#toast');
-    const [title, sub] = flashParts(msg);
-    el.innerHTML = `<span class="flash-ring" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      <p class="flash-title">${esc(title)}</p>${sub ? `<p class="flash-sub">${esc(sub)}</p>` : ''}${undo ? '<button type="button" data-act="undo">Undo</button>' : ''}`;
+    const P = parts || flashParts(msg);
+    el.innerHTML = `<span class="flash-ring" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5.5 12.5l4.2 4.2L18.5 7.8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <div class="flash-text">${P.pre ? `<p class="flash-pre">${esc(P.pre)}</p>` : ''}<p class="flash-title">${esc(P.title)}</p></div>
+      ${P.sub ? `<p class="flash-sub">${esc(P.sub)}</p>` : ''}${undo ? '<button type="button" data-act="undo">Undo</button>' : ''}`;
+    el.setAttribute('aria-label', msg);
     el.classList.remove('is-out'); el.hidden = false;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(hideToast, undo ? 3500 : 2500);
@@ -2094,14 +2102,14 @@ a.proj-row { text-decoration: none; }
       const t = byId(sheet.id);
       if (t.day !== clean.day) { t.home = null; learn(clean.tag, clean.day); t.next = isPast(clean.day); }
       Object.assign(t, clean);
-      toast('Saved');
+      toast('Saved', false, { pre: 'Task', title: 'Saved', sub: t.label });
     } else {
       if (sheet.dayTouched) learn(clean.tag, clean.day);
       const next = isPast(clean.day);
       const nt = Object.assign({ id: nid(), home: null, next }, clean);
       S.tasks.push(nt);
       if (view() === 'plan') planAdded.push({ id: nt.id, q: S.planStep });
-      toast('Added to ' + FULL[clean.day] + (next ? ', next week' : ''));
+      toast('Added to ' + FULL[clean.day] + (next ? ', next week' : ''), false, { pre: 'Task added for', title: (next ? 'Next ' : '') + FULL[clean.day], sub: clean.label });
     }
     save(); closeSheet(); render();
   }
@@ -2166,7 +2174,7 @@ a.proj-row { text-decoration: none; }
       case 'hold-open': sheet.holdOpen = true; renderSheet(); $('#f-hold').focus(); return;
       case 'hold-cancel': sheet.holdOpen = false; sheet.holdError = ''; renderSheet(); return;
       case 'hold-remove': { const m = byId(sheet.id); m.dep = ''; closeSheet(); toast('Hold removed. Back in Ready'); break; }
-      case 'set-status': { const m = byId(sheet.id); m.status = val; closeSheet(); toast(m.status === 'done' ? 'Marked done' : m.status === 'doing' ? 'In progress' : 'Back to to do'); break; }
+      case 'set-status': { const m = byId(sheet.id); m.status = val; closeSheet(); toast(STATUS[m.status], false, { pre: 'Moved to', title: STATUS[m.status], sub: m.label }); break; }
       case 'edit': openSheet({ kind: 'task', mode: 'edit', id, origDay: t.day, draft: { label: t.label, tag: t.tag, day: t.day, status: t.status, dep: t.dep, repeat: t.repeat, notes: t.notes || '' } }); return;
       case 'add': case 'plan-add': {
         const f = S.filters[view() === 'week' ? 'week' : view() === 'all' ? 'all' : 'today'];
@@ -2196,7 +2204,7 @@ a.proj-row { text-decoration: none; }
       case 'delete': {
         const i = S.tasks.indexOf(byId(sheet.id));
         lastDeleted = { task: S.tasks[i], i };
-        S.tasks.splice(i, 1); save(); closeSheet(); render(); toast('Task deleted', true); return;
+        S.tasks.splice(i, 1); save(); closeSheet(); render(); toast('Task deleted', true, { pre: 'Task', title: 'Deleted', sub: lastDeleted.task.label }); return;
       }
       case 'undo':
         if (lastDeleted) { S.tasks.splice(lastDeleted.i, 0, lastDeleted.task); lastDeleted = null; $('#toast').hidden = true; }
@@ -2208,11 +2216,11 @@ a.proj-row { text-decoration: none; }
       case 'm-scope': sheet.scope = val; renderSheet(); return;
       case 'do-move': doMove(); return;
       case 'menu-edit': { const m = byId(sheet.id); openSheet({ kind: 'task', mode: 'edit', id: m.id, origDay: m.day, draft: { label: m.label, tag: m.tag, day: m.day, status: m.status, dep: m.dep, repeat: m.repeat, notes: m.notes || '' } }); return; }
-      case 'menu-done': { const m = byId(sheet.id); m.status = m.status === 'done' ? 'todo' : 'done'; closeSheet(); toast(m.status === 'done' ? 'Marked done' : 'Back to to do'); break; }
+      case 'menu-done': { const m = byId(sheet.id); m.status = m.status === 'done' ? 'todo' : 'done'; closeSheet(); toast(m.status === 'done' ? 'Marked done' : 'Back to to do', false, { pre: m.status === 'done' ? 'Marked' : 'Moved back to', title: m.status === 'done' ? 'Done' : 'To do', sub: m.label }); break; }
       case 'menu-delete': {
         const i = S.tasks.indexOf(byId(sheet.id));
         lastDeleted = { task: S.tasks[i], i };
-        S.tasks.splice(i, 1); save(); closeSheet(); render(); toast('Task deleted', true); return;
+        S.tasks.splice(i, 1); save(); closeSheet(); render(); toast('Task deleted', true, { pre: 'Task', title: 'Deleted', sub: lastDeleted.task.label }); return;
       }
       case 'new-project': openSheet({ kind: 'project', back: sheet, draft: { name: '', icon: 'flag' } }); $('#p-name').focus(); return;
       case 'projects': openSheet(sheet ? { kind: 'projects', back: sheet.kind === 'task' || sheet.kind === 'account' ? sheet : null } : { kind: 'projects', page: true }); return;
