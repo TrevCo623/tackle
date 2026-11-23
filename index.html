@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F7F7F4" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#191917" media="(prefers-color-scheme: dark)">
-<meta name="tackle-build" content="1795127056">
+<meta name="tackle-build" content="1795463613">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -106,6 +106,13 @@ h2 { margin: 0; font-family: var(--display); font-size: 20px; font-weight: 400; 
 }
 .plan-btn strong { display: block; font-size: 16px; font-weight: 500; }
 .wrap-close-note { margin: 28px 0 -8px; }
+.off-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 24px; color: var(--muted); }
+.off-link svg { width: 16px; height: 16px; }
+.day-body .off-link { margin-top: 14px; }
+.off-back { margin-top: 8px; }
+.day.is-off { background: transparent; border: 1px dashed var(--line2); }
+.day.is-off .day-toggle { cursor: default; }
+.day.is-off .day-name svg { width: 18px; height: 18px; color: var(--muted); }
 .choice-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
 .remove-task.is-plain { background: none; padding: 0; margin-top: 4px; }
 .remove-task.is-plain .ptile { background: var(--card); }
@@ -973,6 +980,8 @@ a.proj-row { text-decoration: none; }
   const STATUS = { todo: 'To do', doing: 'In progress', done: 'Done' };
   const NEXT = { todo: 'doing', doing: 'done', done: 'todo' };
   const ICON = {
+    nextwk: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l6 6-6 6"/><path d="M13 6l6 6-6 6"/></svg>',
+    moon: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>',
     todo: '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>',
     doing: '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M11 3.5a7.5 7.5 0 0 1 0 15z" fill="currentColor"/></svg>',
     done: '<svg aria-hidden="true" width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="10.25" fill="currentColor"/><path class="ck" d="M6.5 11.2l3 3 6-6" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -1232,6 +1241,11 @@ a.proj-row { text-decoration: none; }
         <p>${nCount} ${nCount === 1 ? 'task' : 'tasks'} waiting for ${FULL[nd]}.</p></section>`
         + tilesHTML(d);
     }
+    if (isOff(d)) {
+      return `<header class="head slotted">${acctBtn()}<div class="top-slot"><p class="eyebrow">${esc(date)}</p></div><h1 class="today-title">Today is for resting</h1>
+        <p class="lede">You took today off. Enjoy it.</p></header>
+        <button type="button" class="text-btn off-back" data-act="off-undo" data-val="${d}">Take the day back</button>` + tilesHTML(d);
+    }
     const th = THEMES[d];
     const L = todayLists(d, S.filters.today);
     const all = todayLists(d, 'All');
@@ -1258,6 +1272,7 @@ a.proj-row { text-decoration: none; }
       if (S.showDone) h += L.done.map((t) => row(t, '', 'today')).join('');
       h += '</section>';
     }
+    if (!cleared) h += `<button type="button" class="text-btn off-link" data-act="off-ask" data-val="${d}">${ICON.moon}Take today off</button>`;
     return h;
   }
 
@@ -1465,6 +1480,12 @@ a.proj-row { text-decoration: none; }
       }
       const projs = [...new Set(openT.map((t) => t.tag))];
       const icons = projs.slice(0, 5).map((g) => tile(g, true)).join('') + (projs.length > 5 ? `<span class="more-n">+${projs.length - 5}</span>` : '');
+      if (isOff(d)) {
+        h += `<section class="day is-off is-closed" data-day="${d}" aria-label="${FULL[d]}, off this week">
+          <div class="day-toggle"><span class="day-head"><span class="day-name"><span>${ICON.moon}<strong>${FULL[d]}</strong></span><small>Off this week</small></span>
+            <span class="day-right"><button type="button" class="text-btn" data-act="off-undo" data-val="${d}">Take it back</button></span></span></div></section>`;
+        continue;
+      }
       h += `<section class="day ${S.simDay === d ? 'is-today' : ''}${isPast(d) ? ' is-past' : ''} ${isOpen ? 'is-open' : 'is-closed'}" data-day="${d}" data-zone="${d}" aria-label="${FULL[d]}, ${esc(th.name)}">
         <button type="button" class="day-toggle" data-act="toggle-day" data-val="${d}" aria-expanded="${isOpen}" aria-controls="day-${d}">
           <span class="day-head">
@@ -1487,6 +1508,7 @@ a.proj-row { text-decoration: none; }
         } else {
           h += `<p class="empty-day">Nothing here${f === 'All' ? '' : ' for ' + esc(f)}.</p>`;
         }
+        if (!isPast(d)) h += `<button type="button" class="text-btn off-link" data-act="off-ask" data-val="${d}">${ICON.moon}Take ${d === S.simDay ? 'today' : 'this day'} off</button>`;
         h += '</div>';
       }
       h += '</section>';
@@ -1501,7 +1523,11 @@ a.proj-row { text-decoration: none; }
   // Day picking: a project's tasks go to the day you last put them on (learned from moves and edits).
   // A theme that spans days (Client: Tue + Wed) picks the lighter one. New projects and no project: Monday.
   // A day that has already gone by this week. Tasks placed on it go to next week (t.next).
+  // Off days: a themed day taken off for this week only. It behaves like a day that has passed.
+  const offDays = () => (S.off && S.off[S.weekOf || 'proto']) || [];
+  const isOff = (d) => offDays().includes(d);
   function isPast(day) {
+    if (isOff(day)) return true;
     if (APP && S.weekOf && new Date(S.weekOf + 'T00:00:00') > thisMonday()) return false; // week closed early: we're planning next week
     const ti = ALLDAYS.indexOf(S.simDay);
     return ALLDAYS.indexOf(day) < ti;
@@ -1725,7 +1751,7 @@ a.proj-row { text-decoration: none; }
   // Leftovers: one-off tasks still open on a day that has already passed this week.
   // Once a day, on a themed day, Tackle asks where they should go.
   function staleTasks() {
-    if (!THEMES[S.simDay]) return [];
+    if (!THEMES[S.simDay] || isOff(S.simDay)) return [];
     if (APP && S.weekOf && new Date(S.weekOf + 'T00:00:00') > thisMonday()) return [];
     return S.tasks.filter((t) => !t.next && !t.carried && t.status !== 'done' && WEEKDAYS.includes(t.day) && isPast(t.day));
   }
@@ -1742,6 +1768,13 @@ a.proj-row { text-decoration: none; }
     if (list.length) openSheet({ kind: 'stale', ids: list.map((t) => t.id) });
   }
   // Next week starts fresh, so a project's usual day wins outright; otherwise Tackle's normal pick.
+  function setOff(d, on) {
+    const k = S.weekOf || 'proto', o = Object.assign({}, S.off);
+    const cur = (o[k] || []).filter((x) => x !== d);
+    o[k] = on ? cur.concat(d) : cur;
+    Object.keys(o).forEach((x) => { if (x !== k) delete o[x]; }); // only this week matters
+    S.off = o;
+  }
   function nextWeekDay(t) {
     const p = t.tag && S.projects.find((x) => x.name === t.tag);
     if (t.repeat) return t.home || t.day;
@@ -1778,16 +1811,37 @@ a.proj-row { text-decoration: none; }
       <button type="button" class="text-btn" data-act="stale-choose">Let me choose</button></div>`;
     return h;
   }
+  // Taking a day off: its open tasks go to next week (or wherever you pick), and the day rests.
+  function offSheet() {
+    const d = sheet.day, list = staleList(), n = list.length, name = d === S.simDay ? 'today' : FULL[d];
+    let h = head(`Take ${name} off?`);
+    if (!n) {
+      h += `<p class="lede stale-lede">Nothing’s planned for ${name}. Enjoy the break.</p>`;
+      return h + `<div class="sheet-actions"><button type="button" class="primary" data-act="off-next">Take ${name} off</button></div>`;
+    }
+    h += `<p class="lede stale-lede">${n} ${n === 1 ? 'task is' : 'tasks are'} on ${FULL[d]}. Where should ${n === 1 ? 'it' : 'they'} go?</p>`;
+    h += '<div class="stale-rows">' + list.map((t) => {
+      const meta = [projGlyph(t.tag)];
+      if (t.tag) meta.push(`<span>${esc(t.tag)}</span>`);
+      meta.push(`<span class="rep">${t.repeat ? ICON.repeat + 'Skips this week' : 'Next ' + FULL[nextWeekDay(t)]}</span>`);
+      return `<div class="row st-${t.status}"><span class="status" aria-hidden="true">${ICON[t.status]}</span><span class="row-main"><span class="row-label">${esc(t.label)}</span><span class="row-meta">${meta.join('')}</span></span></div>`;
+    }).join('') + '</div>';
+    h += `<div class="sheet-actions"><button type="button" class="primary" data-act="off-next">Move to next week</button>
+      <button type="button" class="text-btn" data-act="off-choose">Let me choose</button></div>`;
+    return h;
+  }
+
   function stalePickPage() {
     const list = staleList();
     const optsAll = WEEKDAYS.filter((d) => !isPast(d)).map((d) => [d, d === S.simDay ? 'Today' : FULL[d]])
       .concat(WEEKDAYS.map((d) => ['next:' + d, 'Next ' + FULL[d]]));
-    let h = pageHead('Back', 'stale-back', 'Unfinished tasks', '', 'stale-form');
+    let h = pageHead('Back', 'stale-back', sheet.offDay ? 'Take ' + FULL[sheet.offDay] + ' off' : 'Unfinished tasks', '', 'stale-form');
     h += '<form id="stale-form" novalidate class="stale-form">';
     h += list.map((t) => {
       // Recurring tasks: this week's remaining days, or skip this week (back on its usual day).
       const opts = t.repeat ? optsAll.filter((o) => !o[0].startsWith('next:')).concat([['next:' + (t.home || t.day), `Skip this week (back ${FULL[t.home || t.day]})`]]) : optsAll;
       const cur = (sheet.pick && sheet.pick[t.id]) || S.simDay, sel = opts.find((o) => o[0] === cur) || opts[0];
+      sheet.pick[t.id] = sel[0];
       return `<div class="stale-row">${tile(t.tag, true)}<span class="stale-name">${esc(t.label)}</span>
         <label class="dd"><span>${esc(sel[1])}</span><span class="caret">${ICON.chev}</span>
         <select data-stale="${t.id}" aria-label="Day for ${esc(t.label)}">${opts.map((o) => `<option value="${o[0]}"${o[0] === sel[0] ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label></div>`;
@@ -1808,6 +1862,7 @@ a.proj-row { text-decoration: none; }
     else if (sheet.kind === 'status') body = statusSheet();
     else if (sheet.kind === 'confirm-remove') body = confirmRemoveSheet();
     else if (sheet.kind === 'del-repeat') body = delRepeatSheet();
+    else if (sheet.kind === 'off') body = offSheet();
     else if (sheet.kind === 'project') body = projectSheet();
     else if (sheet.kind === 'projects') body = projectsSheet();
     else if (sheet.kind === 'theme') body = themeSheet();
@@ -1894,6 +1949,7 @@ a.proj-row { text-decoration: none; }
       return `<div class="sheet-head"><div class="preview-chip">${tile(t.tag)}<h2 id="sheet-h">${esc(t.label)}</h2></div>${closeBtn}</div>
         <div class="menu-list">
         <button type="button" data-act="menu-move">${ICON.arrow}Move to another day<span class="chev">${ICON.chev}</span></button>
+        ${!t.next && !sheet.plan ? `<button type="button" data-act="menu-next">${ICON.nextwk}${t.repeat ? 'Skip to next week' : 'Move to next week'}</button>` : ''}
         <button type="button" data-act="menu-edit">${ICON.edit}Edit task</button>
         <button type="button" data-act="menu-done">${ICON.check}${doneLabel}</button>
         <button type="button" class="danger" data-act="menu-delete">${ICON.trash}Delete task</button></div>`;
@@ -2270,7 +2326,28 @@ a.proj-row { text-decoration: none; }
         return;
       }
       case 'stale-choose': sheet = { kind: 'stale-pick', page: true, ids: sheet.ids, pick: {} }; renderSheet(); return;
-      case 'stale-back': sheet = { kind: 'stale', ids: sheet.ids }; renderSheet(); return;
+      case 'stale-back': if (sheet.offDay) { setOff(sheet.offDay, false); sheet = { kind: 'off', day: sheet.offDay, ids: sheet.ids }; renderSheet(); return; } sheet = { kind: 'stale', ids: sheet.ids }; renderSheet(); return;
+      case 'off-ask': {
+        const ids = S.tasks.filter((t) => t.day === val && !t.next && t.status !== 'done').map((t) => t.id);
+        openSheet({ kind: 'off', day: val, ids }); return;
+      }
+      case 'off-next': {
+        const d = sheet.day, list = staleList();
+        list.forEach((t) => moveStale(t, 'next:' + nextWeekDay(t)));
+        setOff(d, true); save(); closeSheet(); render();
+        toast(FULL[d] + ' off', false, { pre: FULL[d], title: 'Off', sub: list.length ? `${list.length} ${list.length === 1 ? 'task' : 'tasks'} moved to next week` : 'Enjoy it' });
+        return;
+      }
+      case 'off-choose': setOff(sheet.day, true); sheet = { kind: 'stale-pick', page: true, ids: sheet.ids, pick: {}, offDay: sheet.day }; renderSheet(); return;
+      case 'off-undo': setOff(val, false); toast(FULL[val] + ' back on', false, { pre: FULL[val], title: 'Back on', sub: 'Moved tasks stay where they went' }); break;
+      case 'menu-next': {
+        const m = byId(sheet.id);
+        lastDeleted = { skip: { id: m.id, day: m.day, next: m.next, home: m.home, status: m.status } };
+        moveStale(m, 'next:' + nextWeekDay(m));
+        save(); closeSheet(); render();
+        toast('Moved to next week', true, { pre: m.repeat ? 'Skipped until next' : 'Moved to next', title: FULL[m.day], sub: m.label });
+        return;
+      }
       case 'rename': sheet.renaming = true; renderSheet(); { const i = $('#f-label'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); } return;
       case 'delete': case 'menu-delete': case 'del-all': {
         if (a !== 'del-all' && byId(sheet.id) && byId(sheet.id).repeat) { openSheet({ kind: 'del-repeat', id: sheet.id }); return; }
@@ -2365,9 +2442,11 @@ a.proj-row { text-decoration: none; }
     if (e.target.id === 'stale-form') {
       e.preventDefault();
       const list = staleList();
+      const offDay = sheet.offDay;
       list.forEach((t) => moveStale(t, sheet.pick[t.id] || S.simDay));
       save(); closeSheet(); render();
-      toast(`Moved ${list.length} ${list.length === 1 ? 'task' : 'tasks'}`);
+      if (offDay) toast(FULL[offDay] + ' off', false, { pre: FULL[offDay], title: 'Off', sub: `${list.length} ${list.length === 1 ? 'task' : 'tasks'} moved` });
+      else toast(`Moved ${list.length} ${list.length === 1 ? 'task' : 'tasks'}`);
     }
     if (e.target.id === 'account-form') {
       e.preventDefault();
