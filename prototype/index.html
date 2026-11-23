@@ -1820,8 +1820,9 @@ a.proj-row { text-decoration: none; }
     const nx = dayAfter(d);
     const opts = [];
     if (nx) opts.push(['next-day', nx === ALLDAYS[ALLDAYS.indexOf(d) + 1] ? 'Move to tomorrow' : 'Move to ' + FULL[nx], FULL[nx] + ' · ' + THEMES[nx].name]);
-    opts.push(['next-week', 'Move to next week', 'Each goes to its usual day.']);
-    opts.push(['choose', 'Let me choose for each', 'Pick a day for every task.']);
+    const nwDays = [...new Set(list.map(nextWeekDay))];
+    opts.push(['next-week', 'Move to next week', nwDays.length === 1 ? `Skip this week, move to next ${FULL[nwDays[0]]}.` : 'Skip this week, move each to its usual day next week.']);
+    opts.push(['choose', 'Let me choose', 'Pick a day for every task.']);
     const pick = opts.some((o) => o[0] === sheet.choice) ? sheet.choice : opts[0][0];
     h += `<p class="lede stale-lede">${n} ${n === 1 ? 'task is' : 'tasks are'} on ${FULL[d]}. Where should ${n === 1 ? 'it' : 'they'} go?</p>`;
     h += '<div class="off-tasks">' + list.map((t) => `<div class="off-task">${tile(t.tag, true)}<span>${esc(t.label)}</span>${t.repeat ? `<small>${ICON.repeat}</small>` : ''}</div>`).join('') + '</div>';
